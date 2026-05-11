@@ -52,6 +52,8 @@ Snapshot metadata is preserved in Git commits:
 - `created_at` becomes `GIT_AUTHOR_DATE` and `GIT_COMMITTER_DATE`
 - `agent` field becomes the author name, with email as `{agent-slug}@fastest.local`
 - `message` becomes the commit message (falls back to `"Snapshot {id}"`)
+- commit trailers preserve `Fst-Snapshot`, `Fst-Workspace-ID`,
+  `Fst-Workspace`, optional `Fst-Task`, and optional `Fst-Agent`
 - Multi-parent snapshots (from merges) produce multi-parent Git commits
 
 ### Options

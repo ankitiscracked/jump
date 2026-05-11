@@ -149,6 +149,10 @@ func RunExportGitAt(projectRoot string, initRepo bool, rebuild bool) error {
 
 	totalNewCommits := 0
 	exportedWorkspaces := 0
+	tasksBySnapshot, err := tasksBySnapshotID(s)
+	if err != nil {
+		return fmt.Errorf("failed to load tasks: %w", err)
+	}
 
 	for _, ws := range workspaces {
 		if ws.CurrentSnapshotID == "" {
@@ -167,6 +171,7 @@ func RunExportGitAt(projectRoot string, initRepo bool, rebuild bool) error {
 			snapshotID: ws.CurrentSnapshotID,
 			wsName:     ws.WorkspaceName,
 			rebuild:    rebuild,
+			tasks:      tasksBySnapshot,
 		})
 		if err != nil {
 			// Save mapping so progress from previous workspaces isn't lost
@@ -210,6 +215,7 @@ type exportWorkspaceParams struct {
 	snapshotID string // workspace head
 	wsName     string // for display
 	rebuild    bool
+	tasks      map[string]store.Task
 }
 
 func exportWorkspaceSnapshots(p exportWorkspaceParams) (int, error) {
@@ -268,10 +274,7 @@ func exportWorkspaceSnapshots(p exportWorkspaceParams) (int, error) {
 		}
 
 		// Create commit
-		commitMsg := snap.Message
-		if commitMsg == "" {
-			commitMsg = fmt.Sprintf("Snapshot %s", snap.ID[:12])
-		}
+		commitMsg := commitMessageForSnapshot(snap, p.tasks)
 
 		parentSHAs, err := gitstore.ResolveGitParentSHAs(p.git, p.mapping, snap.ParentSnapshotIDs)
 		if err != nil {
@@ -313,3 +316,43 @@ func exportWorkspaceSnapshots(p exportWorkspaceParams) (int, error) {
 	return newCommits, nil
 }
 
+func tasksBySnapshotID(s *store.Store) (map[string]store.Task, error) {
+	tasks, err := s.ListTasks()
+	if err != nil {
+		return nil, err
+	}
+	bySnapshot := make(map[string]store.Task)
+	for _, task := range tasks {
+		for _, snapshotID := range task.Snapshots {
+			if snapshotID != "" {
+				bySnapshot[snapshotID] = task
+			}
+		}
+	}
+	return bySnapshot, nil
+}
+
+func commitMessageForSnapshot(snap *store.SnapshotMeta, tasks map[string]store.Task) string {
+	subject := strings.TrimSpace(snap.Message)
+	if subject == "" {
+		subject = fmt.Sprintf("Snapshot %s", snap.ID[:12])
+	}
+
+	trailers := []string{
+		"Fst-Snapshot: " + snap.ID,
+	}
+	if snap.WorkspaceID != "" {
+		trailers = append(trailers, "Fst-Workspace-ID: "+snap.WorkspaceID)
+	}
+	if snap.WorkspaceName != "" {
+		trailers = append(trailers, "Fst-Workspace: "+snap.WorkspaceName)
+	}
+	if task, ok := tasks[snap.ID]; ok && task.ID != "" {
+		trailers = append(trailers, "Fst-Task: "+task.ID)
+	}
+	if snap.Agent != "" {
+		trailers = append(trailers, "Fst-Agent: "+snap.Agent)
+	}
+
+	return subject + "\n\n" + strings.Join(trailers, "\n")
+}

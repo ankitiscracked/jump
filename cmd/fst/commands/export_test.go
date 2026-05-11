@@ -176,6 +176,11 @@ func TestExportGitSingleWorkspace(t *testing.T) {
 	}
 
 	// Second snapshot
+	cmd = NewRootCmd()
+	cmd.SetArgs([]string{"task", "start", "export task"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("task start: %v", err)
+	}
 	if err := os.WriteFile(filepath.Join(wsRoot, "b.txt"), []byte("v2"), 0644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
@@ -183,6 +188,11 @@ func TestExportGitSingleWorkspace(t *testing.T) {
 	cmd.SetArgs([]string{"snapshot", "-m", "second commit"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("snapshot 2: %v", err)
+	}
+	cmd = NewRootCmd()
+	cmd.SetArgs([]string{"task", "finish", "--summary", "exported"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("task finish: %v", err)
 	}
 	restoreCwd()
 
@@ -215,6 +225,16 @@ func TestExportGitSingleWorkspace(t *testing.T) {
 	}
 	if !strings.Contains(out, "second commit") {
 		t.Fatalf("expected 'second commit' in log: %s", out)
+	}
+	body := gitOutput(t, projectRoot, "log", "-1", "--format=%B", "ws-one", "--")
+	if !strings.Contains(body, "Fst-Snapshot: ") {
+		t.Fatalf("expected Fst-Snapshot trailer in commit body: %s", body)
+	}
+	if !strings.Contains(body, "Fst-Workspace: ws-one") {
+		t.Fatalf("expected Fst-Workspace trailer in commit body: %s", body)
+	}
+	if !strings.Contains(body, "Fst-Task: task-export-task-") {
+		t.Fatalf("expected Fst-Task trailer in commit body: %s", body)
 	}
 
 	// Verify mapping exists with 2 entries
