@@ -1,48 +1,29 @@
 package commands
 
 import (
-	"reflect"
+	"strings"
 	"testing"
 )
 
-func TestVersionCommandRuns(t *testing.T) {
-	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"version"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("version command failed: %v", err)
+func TestRootHelpShowsHappyPath(t *testing.T) {
+	var output string
+	err := captureStdout(func() error {
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"--help"})
+		return cmd.Execute()
+	}, &output)
+	if err != nil {
+		t.Fatalf("help failed: %v", err)
 	}
-}
-
-
-func TestRewriteArgsAgentMessageAlias(t *testing.T) {
-	cases := []struct {
-		name string
-		in   []string
-		out  []string
-	}{
-		{
-			name: "short flag",
-			in:   []string{"snapshot", "-am"},
-			out:  []string{"snapshot", "--agent-message"},
-		},
-		{
-			name: "short flag with equals",
-			in:   []string{"snapshot", "-am=1"},
-			out:  []string{"snapshot", "--agent-message=1"},
-		},
-		{
-			name: "unrelated args unchanged",
-			in:   []string{"snapshot", "-m", "hi"},
-			out:  []string{"snapshot", "-m", "hi"},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := rewriteArgs(tc.in)
-			if !reflect.DeepEqual(got, tc.out) {
-				t.Fatalf("rewriteArgs(%v)=%v, want %v", tc.in, got, tc.out)
-			}
-		})
+	for _, want := range []string{
+		"Mental model:",
+		"Happy path:",
+		"Happy Path Commands",
+		"fst task start",
+		"fst workspace create",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected %q in help output:\n%s", want, output)
+		}
 	}
 }

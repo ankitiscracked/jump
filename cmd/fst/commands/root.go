@@ -15,6 +15,13 @@ var (
 	GitCommit = "unknown"
 )
 
+const (
+	groupHappyPath    = "happy-path"
+	groupInspect      = "inspect"
+	groupIntegrations = "integrations"
+	groupAdvanced     = "advanced"
+)
+
 var rootCmd = newRootCmd()
 
 type registrar func(*cobra.Command)
@@ -29,20 +36,37 @@ func register(r registrar) {
 }
 
 func newRootCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "fst",
-		Short: "Fastest - parallel agent workflows from the ground up",
-		Long: `Fastest (fst) is infrastructure for parallel agent workflows, built from the
-ground up. Existing tools treat parallel development as an afterthought — fst
-makes it the core primitive.
+		Short: "Jump - local snapshots and workspaces for coding agents",
+		Long: `Jump (fst) is a local-first CLI for coding agents and humans working in
+parallel.
 
-It provides:
-  - Parallel workspaces with independent snapshot histories
-  - Immutable snapshots of project state
-  - Three-way merge with agent-assisted conflict resolution
-  - Drift detection across workspaces
-  - CLI-first interface for agents and humans alike`,
+Mental model:
+  project    contains one or more workspaces
+  workspace  is an isolated checkout for one agent or human
+  snapshot   is an immutable checkpoint of a workspace
+  task       groups snapshots into one unit of work
+  events     let nearby agents notice workspace activity
+
+Happy path:
+  fst project create myapp
+  cd myapp/main
+  fst task start "fix auth"
+  fst snapshot -m "checkpoint"
+  fst workspace create agent-ui
+  fst drift main
+  fst merge main
+  fst task finish --summary "fixed auth"
+  fst git export --init`,
 	}
+	cmd.AddGroup(
+		&cobra.Group{ID: groupHappyPath, Title: "Happy Path Commands"},
+		&cobra.Group{ID: groupInspect, Title: "Inspect Commands"},
+		&cobra.Group{ID: groupIntegrations, Title: "Integration Commands"},
+		&cobra.Group{ID: groupAdvanced, Title: "Advanced Commands"},
+	)
+	return cmd
 }
 
 func NewRootCmd() *cobra.Command {
@@ -50,6 +74,7 @@ func NewRootCmd() *cobra.Command {
 	for _, r := range registrars {
 		r(cmd)
 	}
+	configureCommandGroups(cmd)
 	return cmd
 }
 
@@ -57,7 +82,51 @@ func Execute() error {
 	if len(os.Args) > 1 {
 		rootCmd.SetArgs(rewriteArgs(os.Args[1:]))
 	}
+	configureCommandGroups(rootCmd)
 	return rootCmd.Execute()
+}
+
+func configureCommandGroups(cmd *cobra.Command) {
+	groups := map[string]string{
+		"project":   groupHappyPath,
+		"workspace": groupHappyPath,
+		"task":      groupHappyPath,
+		"snapshot":  groupHappyPath,
+		"status":    groupHappyPath,
+		"drift":     groupHappyPath,
+		"diff":      groupHappyPath,
+		"merge":     groupHappyPath,
+		"restore":   groupHappyPath,
+		"log":       groupHappyPath,
+		"events":    groupHappyPath,
+		"watch":     groupHappyPath,
+		"git":       groupHappyPath,
+
+		"info":    groupInspect,
+		"dag":     groupInspect,
+		"history": groupInspect,
+
+		"github":  groupIntegrations,
+		"backend": groupIntegrations,
+		"pull":    groupIntegrations,
+		"sync":    groupIntegrations,
+		"agents":  groupIntegrations,
+		"config":  groupIntegrations,
+
+		"edit":      groupAdvanced,
+		"drop":      groupAdvanced,
+		"squash":    groupAdvanced,
+		"rebase":    groupAdvanced,
+		"gc":        groupAdvanced,
+		"ui":        groupAdvanced,
+		"conflicts": groupAdvanced,
+		"version":   groupAdvanced,
+	}
+	for _, child := range cmd.Commands() {
+		if groupID, ok := groups[child.Name()]; ok {
+			child.GroupID = groupID
+		}
+	}
 }
 
 func rewriteArgs(args []string) []string {

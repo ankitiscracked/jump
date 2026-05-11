@@ -14,6 +14,12 @@ go build -o ./bin/fst ./cmd/fst
 
 ## Quick Start
 
+The CLI help starts with the same happy path:
+
+```bash
+fst --help
+```
+
 Create a project with a `main` workspace:
 
 ```bash
