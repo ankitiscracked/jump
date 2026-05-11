@@ -55,6 +55,7 @@ fst git export
 - `fst drift` compares this workspace against another workspace.
 - `fst merge` performs a three-way merge.
 - `fst restore` restores files from a snapshot.
+- `fst events` shows project-local coordination events.
 - `fst git export` turns snapshot history into Git commits.
 
 ## Docs

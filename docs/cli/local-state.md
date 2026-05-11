@@ -22,6 +22,8 @@ Created by `fst workspace init` or `fst project init` in the workspace root.
   stat-cache.json   # Stat cache for accelerating manifest generation
   export/           # Git export state (created by `fst git export`)
     git-map.json    # Snapshot ID <-> git commit SHA mapping
+  events/           # Append-only project-local coordination events
+    <id>-<type>.json
   .gitignore        # Auto-generated, ignores .fst internals
 ```
 

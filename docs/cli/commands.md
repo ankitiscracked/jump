@@ -50,6 +50,8 @@ Flags:
 | `fst diff [workspace] [file...]` | Show line-level differences |
 | `fst merge <workspace>` | Three-way merge from another workspace |
 | `fst dag` | Show project-wide snapshot DAG |
+| `fst events` | Show project-local coordination events |
+| `fst watch` | Stream project-local coordination events |
 
 Flags:
 
@@ -58,6 +60,8 @@ Flags:
 - `diff`: `--context, -C`, `--no-color`, `--names-only`
 - `merge`: `--manual`, `--theirs`, `--ours`, `--dry-run`, `--agent-summary`, `--no-pre-snapshot`, `--force`, `--abort`
 - `dag`: `--limit, -n`
+- `events`: `--since`, `--json`
+- `watch`: `--since`, `--interval`
 
 Merge conflict modes:
 

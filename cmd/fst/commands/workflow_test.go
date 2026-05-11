@@ -64,6 +64,53 @@ func TestStatusRunsInWorkspace(t *testing.T) {
 	}
 }
 
+func TestSnapshotEmitsEvent(t *testing.T) {
+	root := setupWorkspace(t, "ws-events", map[string]string{
+		"readme.md": "ok",
+	})
+
+	restoreCwd := chdir(t, root)
+	defer restoreCwd()
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"snapshot", "-m", "event snapshot"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("snapshot failed: %v", err)
+	}
+
+	var output string
+	err := captureStdout(func() error {
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"events", "--json"})
+		return cmd.Execute()
+	}, &output)
+	if err != nil {
+		t.Fatalf("events failed: %v", err)
+	}
+
+	var events []struct {
+		Type         string   `json:"type"`
+		Workspace    string   `json:"workspace_name"`
+		FilesChanged []string `json:"files_changed"`
+		Message      string   `json:"message"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &events); err != nil {
+		t.Fatalf("failed to parse events JSON: %v\noutput: %s", err, output)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event, got %d", len(events))
+	}
+	if events[0].Type != "snapshot_created" || events[0].Workspace != "ws-events" {
+		t.Fatalf("unexpected event: %+v", events[0])
+	}
+	if events[0].Message != "event snapshot" {
+		t.Fatalf("expected snapshot message in event, got %q", events[0].Message)
+	}
+	if !contains(events[0].FilesChanged, "readme.md") {
+		t.Fatalf("expected readme.md in changed files, got %v", events[0].FilesChanged)
+	}
+}
+
 func TestDriftBetweenWorkspacesIncludeDirtyJSON(t *testing.T) {
 	// setupProjectWithWorkspaces creates base.txt in both workspaces at base.
 	// Target adds a.txt, Source adds a.txt (different content) + b.txt.
@@ -552,4 +599,3 @@ func contains(list []string, item string) bool {
 	}
 	return false
 }
-

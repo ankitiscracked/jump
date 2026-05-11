@@ -42,14 +42,12 @@ func (ws *Workspace) Snapshot(opts SnapshotOpts) (*SnapshotResult, error) {
 		author = a
 	}
 
-	// Generate manifest
-	m, err := manifest.Generate(ws.root, false)
+	// Generate manifest using stat cache so frequent agent checkpoints stay
+	// cheap on large workspaces.
+	m, err := manifest.GenerateWithCache(ws.root, ws.StatCachePath())
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan files: %w", err)
 	}
-
-	// Populate stat cache
-	manifest.BuildStatCacheFromManifest(ws.root, m, ws.StatCachePath())
 
 	manifestHash, err := m.Hash()
 	if err != nil {
@@ -127,6 +125,19 @@ func (ws *Workspace) Snapshot(opts SnapshotOpts) (*SnapshotResult, error) {
 	// Update project-level workspace registry (non-fatal)
 	_ = ws.store.UpdateWorkspaceHead(ws.cfg.WorkspaceID, snapshotID)
 
+	// Append coordination event (post-commit, non-fatal).
+	_ = ws.store.WriteEvent(store.Event{
+		Type:              "snapshot_created",
+		Time:              createdAt,
+		WorkspaceID:       ws.cfg.WorkspaceID,
+		WorkspaceName:     ws.cfg.WorkspaceName,
+		SnapshotID:        snapshotID,
+		ParentSnapshotIDs: parents,
+		FilesChanged:      ws.changedFilesSincePrimaryParent(m, parents),
+		Message:           opts.Message,
+		Agent:             opts.Agent,
+	})
+
 	return &SnapshotResult{
 		SnapshotID:   snapshotID,
 		ManifestHash: manifestHash,
@@ -141,12 +152,10 @@ func (ws *Workspace) Snapshot(opts SnapshotOpts) (*SnapshotResult, error) {
 // Used before destructive operations (merge, restore, pull).
 func (ws *Workspace) AutoSnapshot(message string) (string, error) {
 	// Generate manifest
-	m, err := manifest.Generate(ws.root, false)
+	m, err := manifest.GenerateWithCache(ws.root, ws.StatCachePath())
 	if err != nil {
 		return "", fmt.Errorf("failed to scan files: %w", err)
 	}
-
-	manifest.BuildStatCacheFromManifest(ws.root, m, ws.StatCachePath())
 
 	manifestHash, err := m.Hash()
 	if err != nil {
@@ -201,5 +210,29 @@ func dedup(ss []string) []string {
 		seen[s] = struct{}{}
 		out = append(out, s)
 	}
+	return out
+}
+
+func (ws *Workspace) changedFilesSincePrimaryParent(current *manifest.Manifest, parents []string) []string {
+	if len(parents) == 0 || parents[0] == "" {
+		paths := make([]string, 0, len(current.Files))
+		for _, f := range current.Files {
+			paths = append(paths, f.Path)
+		}
+		return paths
+	}
+	parentHash, err := ws.store.ManifestHashFromSnapshotID(parents[0])
+	if err != nil {
+		return nil
+	}
+	parentManifest, err := ws.store.LoadManifest(parentHash)
+	if err != nil {
+		return nil
+	}
+	added, modified, deleted := manifest.Diff(parentManifest, current)
+	out := make([]string, 0, len(added)+len(modified)+len(deleted))
+	out = append(out, added...)
+	out = append(out, modified...)
+	out = append(out, deleted...)
 	return out
 }
