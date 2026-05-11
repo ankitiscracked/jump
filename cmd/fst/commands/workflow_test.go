@@ -111,6 +111,109 @@ func TestSnapshotEmitsEvent(t *testing.T) {
 	}
 }
 
+func TestTaskLifecycleRecordsSnapshots(t *testing.T) {
+	root := setupWorkspace(t, "ws-task", map[string]string{
+		"readme.md": "ok",
+	})
+
+	restoreCwd := chdir(t, root)
+	defer restoreCwd()
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"task", "start", "auth fix"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("task start failed: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(root, "auth.txt"), []byte("done"), 0644); err != nil {
+		t.Fatalf("write auth: %v", err)
+	}
+	cmd = NewRootCmd()
+	cmd.SetArgs([]string{"snapshot", "-m", "task work"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("snapshot failed: %v", err)
+	}
+
+	var output string
+	err := captureStdout(func() error {
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"task", "status", "--json"})
+		return cmd.Execute()
+	}, &output)
+	if err != nil {
+		t.Fatalf("task status failed: %v", err)
+	}
+	var task struct {
+		ID           string   `json:"id"`
+		Status       string   `json:"status"`
+		Snapshots    []string `json:"snapshots"`
+		FilesChanged []string `json:"files_changed"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &task); err != nil {
+		t.Fatalf("failed to parse task JSON: %v\noutput: %s", err, output)
+	}
+	if task.Status != "active" {
+		t.Fatalf("expected active task, got %q", task.Status)
+	}
+	if len(task.Snapshots) != 1 {
+		t.Fatalf("expected 1 task snapshot, got %d", len(task.Snapshots))
+	}
+	if !contains(task.FilesChanged, "auth.txt") {
+		t.Fatalf("expected auth.txt in task files, got %v", task.FilesChanged)
+	}
+
+	err = captureStdout(func() error {
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"events", "--json"})
+		return cmd.Execute()
+	}, &output)
+	if err != nil {
+		t.Fatalf("events failed: %v", err)
+	}
+	var events []struct {
+		Type   string `json:"type"`
+		TaskID string `json:"task_id"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &events); err != nil {
+		t.Fatalf("failed to parse events JSON: %v\noutput: %s", err, output)
+	}
+	foundSnapshotEvent := false
+	for _, event := range events {
+		if event.Type == "snapshot_created" && event.TaskID == task.ID {
+			foundSnapshotEvent = true
+		}
+	}
+	if !foundSnapshotEvent {
+		t.Fatalf("expected snapshot_created event for task %s, got %+v", task.ID, events)
+	}
+
+	cmd = NewRootCmd()
+	cmd.SetArgs([]string{"task", "finish", "--summary", "done"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("task finish failed: %v", err)
+	}
+
+	err = captureStdout(func() error {
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"task", "list", "--json"})
+		return cmd.Execute()
+	}, &output)
+	if err != nil {
+		t.Fatalf("task list failed: %v", err)
+	}
+	var tasks []struct {
+		ID      string `json:"id"`
+		Status  string `json:"status"`
+		Summary string `json:"summary"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &tasks); err != nil {
+		t.Fatalf("failed to parse task list JSON: %v\noutput: %s", err, output)
+	}
+	if len(tasks) != 1 || tasks[0].ID != task.ID || tasks[0].Status != "finished" || tasks[0].Summary != "done" {
+		t.Fatalf("unexpected tasks: %+v", tasks)
+	}
+}
+
 func TestWorkspaceCreateEmitsEvent(t *testing.T) {
 	projectRoot, mainRoot := setupProjectWithMain(t, map[string]string{
 		"base.txt": "base",

@@ -126,17 +126,23 @@ func (ws *Workspace) Snapshot(opts SnapshotOpts) (*SnapshotResult, error) {
 	_ = ws.store.UpdateWorkspaceHead(ws.cfg.WorkspaceID, snapshotID)
 
 	// Append coordination event (post-commit, non-fatal).
+	taskID := ws.CurrentTaskID()
+	filesChanged := ws.changedFilesSincePrimaryParent(m, parents)
 	_ = ws.store.WriteEvent(store.Event{
 		Type:              "snapshot_created",
 		Time:              createdAt,
+		TaskID:            taskID,
 		WorkspaceID:       ws.cfg.WorkspaceID,
 		WorkspaceName:     ws.cfg.WorkspaceName,
 		SnapshotID:        snapshotID,
 		ParentSnapshotIDs: parents,
-		FilesChanged:      ws.changedFilesSincePrimaryParent(m, parents),
+		FilesChanged:      filesChanged,
 		Message:           opts.Message,
 		Agent:             opts.Agent,
 	})
+	if taskID != "" {
+		_ = ws.store.RecordTaskSnapshot(taskID, snapshotID, filesChanged)
+	}
 
 	return &SnapshotResult{
 		SnapshotID:   snapshotID,

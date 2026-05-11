@@ -18,6 +18,7 @@ type Event struct {
 	ID                  int64    `json:"id"`
 	Type                string   `json:"type"`
 	Time                string   `json:"time"`
+	TaskID              string   `json:"task_id,omitempty"`
 	WorkspaceID         string   `json:"workspace_id,omitempty"`
 	WorkspaceName       string   `json:"workspace_name,omitempty"`
 	SourceWorkspaceID   string   `json:"source_workspace_id,omitempty"`

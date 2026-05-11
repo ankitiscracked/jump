@@ -19,7 +19,10 @@ Created by `fst workspace init` or `fst project init` in the workspace root.
     <sha256-hash>   # Raw file content keyed by SHA-256 hash
   workspaces/       # Project-level workspace registry (project root only)
     <ws-id>.json    # Per-workspace metadata (name, path, snapshot IDs)
+  tasks/            # Project-level task/session metadata
+    <task-id>.json  # Task: snapshots and files grouped by unit of work
   stat-cache.json   # Stat cache for accelerating manifest generation
+  current-task.json # Workspace-local pointer to the active task, if any
   export/           # Git export state (created by `fst git export`)
     git-map.json    # Snapshot ID <-> git commit SHA mapping
   events/           # Append-only project-local coordination events

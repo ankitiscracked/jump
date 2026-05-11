@@ -41,6 +41,25 @@ Flags:
 - `log`: `--limit, -n`, `--all, -a`, `--graph, -g`
 - `restore`: `--to`, `--to-base`, `--dry-run`
 
+## Tasks
+
+Tasks group multiple snapshots into one agent/human unit of work. They are a
+thin CLI primitive over snapshots; agents can keep using `fst snapshot` while
+the active task records which snapshots and files belong together.
+
+| Command | Description |
+|---------|-------------|
+| `fst task start <name>` | Start a task in the current workspace |
+| `fst task status [task-id]` | Show the current or named task |
+| `fst task finish` | Finish the current task |
+| `fst task list` | List project tasks |
+
+Flags:
+
+- `task status`: `--json`
+- `task finish`: `--summary`
+- `task list`: `--json`
+
 ## Drift, Diff, Merge
 
 | Command | Description |
@@ -63,8 +82,8 @@ Flags:
 - `events`: `--since`, `--json`
 - `watch`: `--since`, `--interval`
 
-Current event types: `workspace_created`, `snapshot_created`, `merge_started`,
-`merge_completed`, `restore_completed`.
+Current event types: `workspace_created`, `snapshot_created`, `task_started`,
+`task_finished`, `merge_started`, `merge_completed`, `restore_completed`.
 
 Merge conflict modes:
 

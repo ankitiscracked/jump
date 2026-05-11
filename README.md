@@ -49,11 +49,14 @@ fst git export
 
 ## Daily Commands
 
+- `fst task start` starts a named unit of work for an agent/human.
 - `fst snapshot` captures current workspace state.
+- `fst task status` shows snapshots and files for the active task.
 - `fst workspace create` forks a peer workspace.
 - `fst status` shows local changes since the latest snapshot.
 - `fst drift` compares this workspace against another workspace.
 - `fst merge` performs a three-way merge.
+- `fst task finish` closes the active unit of work.
 - `fst restore` restores files from a snapshot.
 - `fst events` shows project-local coordination events.
 - `fst git export` turns snapshot history into Git commits.
