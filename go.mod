@@ -1,4 +1,4 @@
-module github.com/ankitiscracked/jump
+module github.com/ankitiscracked/jmp
 
 go 1.24.0
 

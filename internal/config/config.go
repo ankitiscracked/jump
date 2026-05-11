@@ -6,20 +6,19 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ankitiscracked/jump/internal/ignore"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/ignore"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
-
 const (
-	ConfigDirName    = ".fst"
+	ConfigDirName    = ".jmp"
 	ConfigFileName   = "config.json"
 	SnapshotsDirName = "snapshots"
 	ManifestsDirName = "manifests"
 	BlobsDirName     = "blobs"
 )
 
-// StatCacheFileName is the name of the stat cache file stored in .fst/.
+// StatCacheFileName is the name of the stat cache file stored in .jmp/.
 const StatCacheFileName = "stat-cache.json"
 
 // GetStatCachePath returns the path to the stat cache file for a workspace root.
@@ -29,7 +28,7 @@ func GetStatCachePath(root string) string {
 	return filepath.Join(root, ConfigDirName, StatCacheFileName)
 }
 
-// GetGlobalConfigDir returns the global config directory (~/.config/fst/)
+// GetGlobalConfigDir returns the global config directory (~/.config/jmp/)
 // Supports XDG_CONFIG_HOME environment variable
 func GetGlobalConfigDir() (string, error) {
 	configHome := os.Getenv("XDG_CONFIG_HOME")
@@ -40,7 +39,7 @@ func GetGlobalConfigDir() (string, error) {
 		}
 		configHome = filepath.Join(home, ".config")
 	}
-	configDir := filepath.Join(configHome, "fst")
+	configDir := filepath.Join(configHome, "jmp")
 	if err := os.MkdirAll(configDir, 0700); err != nil {
 		return "", fmt.Errorf("could not create config directory: %w", err)
 	}
@@ -185,7 +184,7 @@ func GetLatestSnapshotIDForWorkspaceAt(root string, workspaceID string) (string,
 	return s.GetLatestSnapshotIDForWorkspace(workspaceID)
 }
 
-// WorkspaceConfig represents the local project configuration stored in .fst/config.json
+// WorkspaceConfig represents the local project configuration stored in .jmp/config.json
 // All workspaces are peers - there is no main/linked distinction
 type WorkspaceConfig struct {
 	Type           string `json:"type"`
@@ -200,7 +199,7 @@ type WorkspaceConfig struct {
 	Mode              string `json:"mode,omitempty"` // "cloud" or "local"
 }
 
-// isWorkspaceRoot checks if dir contains a .fst/config.json with type "workspace".
+// isWorkspaceRoot checks if dir contains a .jmp/config.json with type "workspace".
 func isWorkspaceRoot(dir string) bool {
 	data, err := os.ReadFile(filepath.Join(dir, ConfigDirName, ConfigFileName))
 	if err != nil {
@@ -215,7 +214,7 @@ func isWorkspaceRoot(dir string) bool {
 	return header.Type == ConfigTypeWorkspace
 }
 
-// FindWorkspaceRoot walks up the directory tree to find a workspace root (.fst/config.json with type "workspace")
+// FindWorkspaceRoot walks up the directory tree to find a workspace root (.jmp/config.json with type "workspace")
 func FindWorkspaceRoot() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -230,13 +229,13 @@ func FindWorkspaceRoot() (string, error) {
 
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", fmt.Errorf("not in a fst project (no .fst found)")
+			return "", fmt.Errorf("not in a jmp project (no .jmp found)")
 		}
 		dir = parent
 	}
 }
 
-// GetConfigDir returns the .fst directory path for the current workspace
+// GetConfigDir returns the .jmp directory path for the current workspace
 func GetConfigDir() (string, error) {
 	root, err := FindWorkspaceRoot()
 	if err != nil {
@@ -245,7 +244,7 @@ func GetConfigDir() (string, error) {
 	return filepath.Join(root, ConfigDirName), nil
 }
 
-// Load reads the project configuration from .fst/config.json
+// Load reads the project configuration from .jmp/config.json
 func Load() (*WorkspaceConfig, error) {
 	root, err := FindWorkspaceRoot()
 	if err != nil {
@@ -311,7 +310,7 @@ func LoadAt(root string) (*WorkspaceConfig, error) {
 	return &config, nil
 }
 
-// Save writes the project configuration to .fst/config.json
+// Save writes the project configuration to .jmp/config.json
 func Save(config *WorkspaceConfig) error {
 	root, err := FindWorkspaceRoot()
 	if err != nil {
@@ -366,7 +365,7 @@ func SaveAt(root string, config *WorkspaceConfig) error {
 	return nil
 }
 
-// Init creates a new workspace with .fst directory structure
+// Init creates a new workspace with .jmp directory structure
 func Init(projectID, workspaceID, workspaceName string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -402,10 +401,10 @@ func InitAt(root, projectID, workspaceID, workspaceName, baseSnapshotID string) 
 		if err := os.MkdirAll(filepath.Join(sharedConfigDir, BlobsDirName), 0755); err != nil {
 			return fmt.Errorf("failed to create shared blobs directory: %w", err)
 		}
-		// Write .gitignore for the project-level .fst/ if not already present
+		// Write .gitignore for the project-level .jmp/ if not already present
 		gitignorePath := filepath.Join(sharedConfigDir, ".gitignore")
 		if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
-			gitignore := "# Fastest shared data\nsnapshots/\nmanifests/\nblobs/\n*.log\nstat-cache.json\n"
+			gitignore := "# jmp shared data\nsnapshots/\nmanifests/\nblobs/\n*.log\nstat-cache.json\n"
 			_ = os.WriteFile(gitignorePath, []byte(gitignore), 0644)
 		}
 	} else {
@@ -446,8 +445,8 @@ func InitAt(root, projectID, workspaceID, workspaceName, baseSnapshotID string) 
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
-	// Create .gitignore for .fst directory
-	gitignore := `# Fastest local data
+	// Create .gitignore for .jmp directory
+	gitignore := `# jmp local data
 snapshots/
 manifests/
 blobs/
@@ -460,14 +459,14 @@ stat-cache.json
 		return fmt.Errorf("failed to write .gitignore: %w", err)
 	}
 
-	// Create .fstignore in workspace root if missing
-	fstignorePath := filepath.Join(root, ".fstignore")
-	if _, err := os.Stat(fstignorePath); os.IsNotExist(err) {
-		if err := os.WriteFile(fstignorePath, []byte(ignore.DefaultFileContents()), 0644); err != nil {
-			return fmt.Errorf("failed to write .fstignore: %w", err)
+	// Create .jmpignore in workspace root if missing
+	jmpignorePath := filepath.Join(root, ".jmpignore")
+	if _, err := os.Stat(jmpignorePath); os.IsNotExist(err) {
+		if err := os.WriteFile(jmpignorePath, []byte(ignore.DefaultFileContents()), 0644); err != nil {
+			return fmt.Errorf("failed to write .jmpignore: %w", err)
 		}
 	} else if err != nil {
-		return fmt.Errorf("failed to check .fstignore: %w", err)
+		return fmt.Errorf("failed to check .jmpignore: %w", err)
 	}
 
 	return nil
@@ -491,7 +490,7 @@ func GetWorkspaceID() (string, error) {
 	return config.WorkspaceID, nil
 }
 
-// IsInitialized checks if the current directory is a fst project
+// IsInitialized checks if the current directory is a jmp project
 func IsInitialized() bool {
 	_, err := FindWorkspaceRoot()
 	return err == nil
@@ -507,7 +506,7 @@ func GetMachineID() string {
 }
 
 // MigrateToSharedStore moves snapshot metadata and manifests from a workspace-local
-// .fst/ directory to the project-level shared store. Files that already exist in
+// .jmp/ directory to the project-level shared store. Files that already exist in
 // the shared store are skipped (content-addressed manifests naturally deduplicate).
 func MigrateToSharedStore(workspaceRoot string) error {
 	projectRoot, _, err := FindProjectRootFrom(workspaceRoot)

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ankitiscracked/jump/internal/config"
+	"github.com/ankitiscracked/jmp/internal/config"
 )
 
 // setupTestWorkspace creates a standalone workspace (no parent project config)
@@ -19,10 +19,10 @@ func setupTestWorkspace(t *testing.T, files map[string]string) (string, *Workspa
 		t.Fatalf("InitAt: %v", err)
 	}
 
-	// Create .fstignore
-	fstignore := filepath.Join(root, ".fstignore")
-	if _, err := os.Stat(fstignore); os.IsNotExist(err) {
-		os.WriteFile(fstignore, []byte(".fst/\n"), 0644)
+	// Create .jmpignore
+	jmpignore := filepath.Join(root, ".jmpignore")
+	if _, err := os.Stat(jmpignore); os.IsNotExist(err) {
+		os.WriteFile(jmpignore, []byte(".jmp/\n"), 0644)
 	}
 
 	// Write files

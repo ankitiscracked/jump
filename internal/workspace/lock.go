@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	lockDirName       = ".fst"
+	lockDirName       = ".jmp"
 	workspaceLockFile = "lock"
 	gcLockFile        = "gc.lock"
 	backendLockFile   = "backend.lock"
@@ -49,13 +49,13 @@ func (l *LockFile) Release() error {
 }
 
 // AcquireWorkspaceLock acquires an exclusive lock on a workspace directory.
-// This prevents concurrent fst operations on the same workspace from
+// This prevents concurrent jmp operations on the same workspace from
 // interleaving and producing corrupted state.
 func AcquireWorkspaceLock(workspaceRoot string) (*LockFile, error) {
 	path := filepath.Join(workspaceRoot, lockDirName, workspaceLockFile)
 	lock, err := acquireFlock(path, syscall.LOCK_EX)
 	if err != nil {
-		return nil, fmt.Errorf("could not lock workspace %s (another fst operation may be running): %w", workspaceRoot, err)
+		return nil, fmt.Errorf("could not lock workspace %s (another jmp operation may be running): %w", workspaceRoot, err)
 	}
 	return lock, nil
 }

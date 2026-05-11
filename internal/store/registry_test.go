@@ -9,7 +9,7 @@ import (
 func setupTestStore(t *testing.T) *Store {
 	t.Helper()
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, ".fst"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jmp"), 0755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	return OpenAt(root)

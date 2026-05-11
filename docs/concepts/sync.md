@@ -1,26 +1,26 @@
 # Sync
 
-`fst sync` reconciles local snapshot state with a configured backend.
+`jmp sync` reconciles local snapshot state with a configured backend.
 
 Backends are configured at project level:
 
 ```bash
-fst backend set git
-fst backend set github owner/repo
+jmp backend set git
+jmp backend set github owner/repo
 ```
 
 The current backend implementations use Git export/import as the transport.
 When local and backend heads diverge, sync uses the same three-way merge
-machinery as `fst merge`.
+machinery as `jmp merge`.
 
 ## Commands
 
-- `fst backend status`: show backend config.
-- `fst backend push`: push local snapshot export to backend.
-- `fst pull`: pull latest backend state.
-- `fst sync`: pull, merge if needed, then push.
+- `jmp backend status`: show backend config.
+- `jmp backend push`: push local snapshot export to backend.
+- `jmp pull`: pull latest backend state.
+- `jmp sync`: pull, merge if needed, then push.
 
-`fst sync` conflict flags:
+`jmp sync` conflict flags:
 
 - `--manual`: write conflict markers.
 - `--theirs`: take backend version for conflicts.
@@ -37,5 +37,5 @@ When histories diverge:
 5. Create a merge snapshot with both parents.
 6. Push merged state through the backend.
 
-Implementation: `cmd/fst/commands/sync.go`, `cmd/fst/commands/backend.go`,
-`cmd/fst/commands/cloud_merge.go`, `internal/backend/`.
+Implementation: `cmd/jmp/commands/sync.go`, `cmd/jmp/commands/backend.go`,
+`cmd/jmp/commands/cloud_merge.go`, `internal/backend/`.

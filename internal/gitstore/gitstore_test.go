@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/gitutil"
-	"github.com/ankitiscracked/jump/internal/manifest"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/gitutil"
+	"github.com/ankitiscracked/jmp/internal/manifest"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 // initGitRepo creates a git repo and returns an Env for it.
@@ -200,12 +200,12 @@ func TestAgentEmail(t *testing.T) {
 		agent    string
 		expected string
 	}{
-		{"Claude", "claude@fastest.local"},
-		{"Claude Code", "claude-code@fastest.local"},
-		{"GPT-4o", "gpt-4o@fastest.local"},
+		{"Claude", "claude@jmp.local"},
+		{"Claude Code", "claude-code@jmp.local"},
+		{"GPT-4o", "gpt-4o@jmp.local"},
 		{"", ""},
-		{"---", "agent@fastest.local"},
-		{"My Agent 3.5", "my-agent-3-5@fastest.local"},
+		{"---", "agent@jmp.local"},
+		{"My Agent 3.5", "my-agent-3-5@jmp.local"},
 	}
 	for _, tt := range tests {
 		got := AgentEmail(tt.agent)
@@ -242,8 +242,8 @@ func TestCommitMetaFromSnapshot(t *testing.T) {
 	if meta2.AuthorName != "Claude" {
 		t.Fatalf("expected Claude, got %s", meta2.AuthorName)
 	}
-	if meta2.AuthorEmail != "claude@fastest.local" {
-		t.Fatalf("expected claude@fastest.local, got %s", meta2.AuthorEmail)
+	if meta2.AuthorEmail != "claude@jmp.local" {
+		t.Fatalf("expected claude@jmp.local, got %s", meta2.AuthorEmail)
 	}
 
 	// Empty snapshot
@@ -306,7 +306,7 @@ func TestRestoreFilesFromManifest(t *testing.T) {
 	}
 }
 
-func TestRestoreFilesPreservesGitAndFst(t *testing.T) {
+func TestRestoreFilesPreservesGitAndJmp(t *testing.T) {
 	projectRoot := t.TempDir()
 	s := store.OpenAt(projectRoot)
 	s.EnsureDirs()
@@ -314,20 +314,20 @@ func TestRestoreFilesPreservesGitAndFst(t *testing.T) {
 	m := &manifest.Manifest{Version: "1", Files: []manifest.FileEntry{}}
 
 	targetDir := t.TempDir()
-	// Create .git and .fst dirs with files
+	// Create .git and .jmp dirs with files
 	os.MkdirAll(filepath.Join(targetDir, ".git"), 0755)
 	os.WriteFile(filepath.Join(targetDir, ".git", "HEAD"), []byte("ref"), 0644)
-	os.MkdirAll(filepath.Join(targetDir, ".fst"), 0755)
-	os.WriteFile(filepath.Join(targetDir, ".fst", "config.json"), []byte("{}"), 0644)
+	os.MkdirAll(filepath.Join(targetDir, ".jmp"), 0755)
+	os.WriteFile(filepath.Join(targetDir, ".jmp", "config.json"), []byte("{}"), 0644)
 
 	RestoreFilesFromManifest(targetDir, s, m)
 
-	// .git and .fst should be preserved
+	// .git and .jmp should be preserved
 	if _, err := os.Stat(filepath.Join(targetDir, ".git", "HEAD")); err != nil {
 		t.Fatalf("expected .git/HEAD to be preserved: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(targetDir, ".fst", "config.json")); err != nil {
-		t.Fatalf("expected .fst/config.json to be preserved: %v", err)
+	if _, err := os.Stat(filepath.Join(targetDir, ".jmp", "config.json")); err != nil {
+		t.Fatalf("expected .jmp/config.json to be preserved: %v", err)
 	}
 }
 
@@ -467,7 +467,7 @@ func TestCreateImportedSnapshot(t *testing.T) {
 	}
 
 	// With agent
-	snap3, err := CreateImportedSnapshot(s, sourceRoot, wsCfg, nil, "agent work", now, "Claude", "claude@fastest.local", "Claude")
+	snap3, err := CreateImportedSnapshot(s, sourceRoot, wsCfg, nil, "agent work", now, "Claude", "claude@jmp.local", "Claude")
 	if err != nil {
 		t.Fatalf("CreateImportedSnapshot agent: %v", err)
 	}

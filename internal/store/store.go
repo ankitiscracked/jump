@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	configDirName  = ".fst"
+	configDirName    = ".jmp"
 	snapshotsDirName = "snapshots"
 	manifestsDirName = "manifests"
 	blobsDirName     = "blobs"
@@ -36,7 +36,7 @@ func OpenAt(projectRoot string) *Store {
 }
 
 // OpenFromWorkspace creates a Store by walking up from a workspace root
-// to find the project root (.fst/config.json with type "project").
+// to find the project root (.jmp/config.json with type "project").
 // If no parent project is found, the workspace root itself is treated
 // as the project root (standalone mode).
 func OpenFromWorkspace(workspaceRoot string) *Store {
@@ -69,7 +69,7 @@ func (s *Store) EnsureDirs() error {
 	return nil
 }
 
-// isProjectConfig checks if dir contains a .fst/config.json with type "project".
+// isProjectConfig checks if dir contains a .jmp/config.json with type "project".
 func isProjectConfig(dir string) bool {
 	data, err := os.ReadFile(filepath.Join(dir, configDirName, "config.json"))
 	if err != nil {
@@ -85,7 +85,7 @@ func isProjectConfig(dir string) bool {
 }
 
 // findProjectRoot walks up from start looking for a project root
-// (.fst/config.json with type "project").
+// (.jmp/config.json with type "project").
 func findProjectRoot(start string) (string, error) {
 	dir := start
 	for {

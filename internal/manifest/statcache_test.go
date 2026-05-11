@@ -176,8 +176,8 @@ func TestStatCacheMissing(t *testing.T) {
 
 func TestGenerateWithCacheIdenticalOutput(t *testing.T) {
 	dir := t.TempDir()
-	cachePath := filepath.Join(dir, ".fst", "stat-cache.json")
-	os.MkdirAll(filepath.Join(dir, ".fst"), 0755)
+	cachePath := filepath.Join(dir, ".jmp", "stat-cache.json")
+	os.MkdirAll(filepath.Join(dir, ".jmp"), 0755)
 
 	// Create some files
 	os.WriteFile(filepath.Join(dir, "a.txt"), []byte("aaa"), 0644)
@@ -218,8 +218,8 @@ func TestGenerateWithCacheIdenticalOutput(t *testing.T) {
 
 func TestGenerateWithCacheReHashesOnChange(t *testing.T) {
 	dir := t.TempDir()
-	cachePath := filepath.Join(dir, ".fst", "stat-cache.json")
-	os.MkdirAll(filepath.Join(dir, ".fst"), 0755)
+	cachePath := filepath.Join(dir, ".jmp", "stat-cache.json")
+	os.MkdirAll(filepath.Join(dir, ".jmp"), 0755)
 
 	os.WriteFile(filepath.Join(dir, "file.txt"), []byte("original"), 0644)
 
@@ -260,8 +260,8 @@ func TestGenerateWithCacheReHashesOnChange(t *testing.T) {
 
 func TestGenerateWithCachePrunesDeletedFiles(t *testing.T) {
 	dir := t.TempDir()
-	cachePath := filepath.Join(dir, ".fst", "stat-cache.json")
-	os.MkdirAll(filepath.Join(dir, ".fst"), 0755)
+	cachePath := filepath.Join(dir, ".jmp", "stat-cache.json")
+	os.MkdirAll(filepath.Join(dir, ".jmp"), 0755)
 
 	os.WriteFile(filepath.Join(dir, "keep.txt"), []byte("keep"), 0644)
 	os.WriteFile(filepath.Join(dir, "delete.txt"), []byte("delete"), 0644)
@@ -287,8 +287,8 @@ func TestGenerateWithCachePrunesDeletedFiles(t *testing.T) {
 
 func TestBuildStatCacheFromManifest(t *testing.T) {
 	dir := t.TempDir()
-	cachePath := filepath.Join(dir, ".fst", "stat-cache.json")
-	os.MkdirAll(filepath.Join(dir, ".fst"), 0755)
+	cachePath := filepath.Join(dir, ".jmp", "stat-cache.json")
+	os.MkdirAll(filepath.Join(dir, ".jmp"), 0755)
 
 	os.WriteFile(filepath.Join(dir, "file.txt"), []byte("hello"), 0644)
 

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ankitiscracked/jump/internal/config"
+	"github.com/ankitiscracked/jmp/internal/config"
 )
 
 func TestRestoreFiles(t *testing.T) {

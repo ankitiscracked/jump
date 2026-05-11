@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 func TestSnapshot(t *testing.T) {

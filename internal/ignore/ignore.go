@@ -8,10 +8,10 @@ import (
 	"strings"
 )
 
-//go:embed default.fstignore
+//go:embed default.jmpignore
 var defaultIgnoreFile string
 
-// Matcher handles .fstignore pattern matching
+// Matcher handles .jmpignore pattern matching
 type Matcher struct {
 	patterns []pattern
 }
@@ -34,7 +34,7 @@ func NewMatcher(patterns []string) *Matcher {
 	return m
 }
 
-// DefaultFileContents returns the default .fstignore contents.
+// DefaultFileContents returns the default .jmpignore contents.
 func DefaultFileContents() string {
 	return defaultIgnoreFile
 }
@@ -64,9 +64,9 @@ func LoadFromFile(path string) (*Matcher, error) {
 	return NewMatcher(patterns), scanner.Err()
 }
 
-// LoadFromDir loads ignore patterns from .fstignore in the given directory
+// LoadFromDir loads ignore patterns from .jmpignore in the given directory
 func LoadFromDir(dir string) (*Matcher, error) {
-	return LoadFromFile(filepath.Join(dir, ".fstignore"))
+	return LoadFromFile(filepath.Join(dir, ".jmpignore"))
 }
 
 func defaultPatterns() []string {

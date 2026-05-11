@@ -63,7 +63,7 @@ func TestInitAtCreatesStructure(t *testing.T) {
 func TestFindWorkspaceRoot(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, ConfigDirName), 0755); err != nil {
-		t.Fatalf("mkdir .fst: %v", err)
+		t.Fatalf("mkdir .jmp: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(root, ConfigDirName, ConfigFileName), []byte(`{"type":"workspace"}`), 0644); err != nil {
 		t.Fatalf("write config: %v", err)

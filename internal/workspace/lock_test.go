@@ -9,7 +9,7 @@ import (
 
 func TestAcquireBackendLock(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, ".fst"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jmp"), 0755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
 
@@ -28,7 +28,7 @@ func TestAcquireBackendLock(t *testing.T) {
 
 func TestAcquireBackendLockReentrant(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, ".fst"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jmp"), 0755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
 
@@ -48,7 +48,7 @@ func TestAcquireBackendLockReentrant(t *testing.T) {
 
 func TestTryAcquireBackendLockFree(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, ".fst"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jmp"), 0755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
 
@@ -64,14 +64,14 @@ func TestTryAcquireBackendLockFree(t *testing.T) {
 
 func TestTryAcquireBackendLockContended(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, ".fst"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jmp"), 0755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
 
 	// Hold the lock from a child process using a Go helper.
 	// We use a simple Python one-liner that flocks and signals readiness via a file.
 	readyFile := filepath.Join(root, "ready")
-	lockPath := filepath.Join(root, ".fst", backendLockFile)
+	lockPath := filepath.Join(root, ".jmp", backendLockFile)
 	script := `
 import fcntl, time, os, sys
 fd = open(sys.argv[1], 'w')

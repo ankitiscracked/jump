@@ -96,7 +96,7 @@ func GetConfigPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".config", "fst", "agents.json"), nil
+	return filepath.Join(home, ".config", "jmp", "agents.json"), nil
 }
 
 // LoadConfig loads agent configuration
@@ -152,7 +152,7 @@ func GetPreferredAgent() (*Agent, error) {
 
 	available := GetAvailableAgents()
 	if len(available) == 0 {
-		return nil, fmt.Errorf("no coding agents detected - install a supported agent or set one with 'fst agents set <name>'")
+		return nil, fmt.Errorf("no coding agents detected - install a supported agent or set one with 'jmp agents set <name>'")
 	}
 
 	// If preferred is set and available, use it
@@ -169,7 +169,7 @@ func GetPreferredAgent() (*Agent, error) {
 	}
 
 	if !term.IsTerminal(int(os.Stdin.Fd())) {
-		return nil, fmt.Errorf("multiple coding agents detected - set preferred with 'fst agents set <name>'")
+		return nil, fmt.Errorf("multiple coding agents detected - set preferred with 'jmp agents set <name>'")
 	}
 
 	chosen, err := PromptAgentChoice(available)

@@ -4,7 +4,7 @@ A snapshot is an immutable record of a workspace's file state at a point in time
 
 ## Snapshot Metadata
 
-Each snapshot is stored as a `.meta.json` file in `.fst/snapshots/`. The full metadata structure:
+Each snapshot is stored as a `.meta.json` file in `.jmp/snapshots/`. The full metadata structure:
 
 ```json
 {
@@ -23,7 +23,7 @@ Each snapshot is stored as a `.meta.json` file in `.fst/snapshots/`. The full me
 }
 ```
 
-The `manifest_hash` links to a manifest JSON file in `.fst/manifests/{hash}.json` that contains the full file listing with per-file SHA-256 hashes, sizes, and modes.
+The `manifest_hash` links to a manifest JSON file in `.jmp/manifests/{hash}.json` that contains the full file listing with per-file SHA-256 hashes, sizes, and modes.
 
 A minimal `SnapshotMeta` (in `internal/config/config.go`) is used for resolution: `id`, `created_at`, `manifest_hash`, `parent_snapshot_ids`, `author_name`, and `author_email`.
 
@@ -64,7 +64,7 @@ Snapshots reference zero or more parent snapshot IDs in `parent_snapshot_ids`:
 
 Parent IDs are resolved at snapshot creation time via `resolveSnapshotParents`, which checks for pending merge parents first (written by the merge command), then falls back to `current_snapshot_id`.
 
-Implementation: `cmd/fst/commands/snapshot.go` (`resolveSnapshotParents`).
+Implementation: `cmd/jmp/commands/snapshot.go` (`resolveSnapshotParents`).
 
 ## Merge Base Algorithm
 
@@ -76,27 +76,27 @@ Finding the common ancestor between two workspace heads uses BFS on the snapshot
 4. Ties are broken by preferring the more recently created snapshot (by `created_at` timestamp)
 5. The search prunes early: if the current source distance already exceeds the best known combined score, it stops
 
-Snapshot metadata is loaded from either workspace's `.fst/snapshots/` directory via `LoadSnapshotMetaAny`.
+Snapshot metadata is loaded from either workspace's `.jmp/snapshots/` directory via `LoadSnapshotMetaAny`.
 
 ## Snapshot Creation Flow
 
-`fst snapshot` (implemented in `cmd/fst/commands/snapshot.go`):
+`jmp snapshot` (implemented in `cmd/jmp/commands/snapshot.go`):
 
 1. Resolves the author identity (project-level > global > interactive prompt)
-2. Generates a manifest of the current filesystem (respecting `.fstignore`), hashing every file with SHA-256
-3. Populates the stat cache (`.fst/stat-cache.json`) so subsequent status/drift checks can skip rehashing unchanged files
+2. Generates a manifest of the current filesystem (respecting `.jmpignore`), hashing every file with SHA-256
+3. Populates the stat cache (`.jmp/stat-cache.json`) so subsequent status/drift checks can skip rehashing unchanged files
 4. Computes the manifest's SHA-256 content hash
 5. Computes the content-addressed snapshot ID from identity fields
-6. Caches all file blobs in the project-level blob store (`.fst/blobs/`)
-7. Saves the manifest JSON to `.fst/manifests/{hash}.json`
-8. Writes snapshot metadata to `.fst/snapshots/{id}.meta.json`
+6. Caches all file blobs in the project-level blob store (`.jmp/blobs/`)
+7. Saves the manifest JSON to `.jmp/manifests/{hash}.json`
+8. Writes snapshot metadata to `.jmp/snapshots/{id}.meta.json`
 9. Updates `current_snapshot_id` in config
 10. Clears any pending merge parents
 
 Options:
 - `--message` / `-m`: Required description for the snapshot
 - `--agent-summary`: Auto-generates a description using a configured AI agent
-- `--agent`: Records which AI agent made the changes (auto-detected from `FST_AGENT` env var)
+- `--agent`: Records which AI agent made the changes (auto-detected from `JMP_AGENT` env var)
 
 ### Auto-Snapshots
 
@@ -104,15 +104,15 @@ Options:
 
 ## Snapshot History
 
-`fst log` displays the snapshot chain starting from `current_snapshot_id`, walking backwards through `parent_snapshot_ids[0]`. Use `--all` to show all snapshots sorted by time regardless of chain membership. Output includes shortened IDs, relative timestamps, file counts, sizes, agent tags, and messages.
+`jmp log` displays the snapshot chain starting from `current_snapshot_id`, walking backwards through `parent_snapshot_ids[0]`. Use `--all` to show all snapshots sorted by time regardless of chain membership. Output includes shortened IDs, relative timestamps, file counts, sizes, agent tags, and messages.
 
-Use `--graph` / `-g` to display a git-log-style DAG visualization alongside the log entries. This follows all parent links (not just first-parent), topologically sorts the results, and renders column-based graph lines showing merges and forks. The `fst dag` command provides a similar project-wide DAG view across all workspaces.
+Use `--graph` / `-g` to display a git-log-style DAG visualization alongside the log entries. This follows all parent links (not just first-parent), topologically sorts the results, and renders column-based graph lines showing merges and forks. The `jmp dag` command provides a similar project-wide DAG view across all workspaces.
 
-Implementation: `cmd/fst/commands/log.go` (`walkSnapshotChain`, `runLogGraph`), `internal/dag/graph.go` (`GraphRenderer`, `TopoSort`).
+Implementation: `cmd/jmp/commands/log.go` (`walkSnapshotChain`, `runLogGraph`), `internal/dag/graph.go` (`GraphRenderer`, `TopoSort`).
 
 ### TODO
 
-- ~~Add `fst gc` to delete orphaned snapshots/manifests~~ (done)
+- ~~Add `jmp gc` to delete orphaned snapshots/manifests~~ (done)
 
 ## Related Docs
 

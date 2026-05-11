@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 const (
@@ -25,14 +25,14 @@ type BackendConfig struct {
 }
 
 type ProjectConfig struct {
-	Type             string         `json:"type"`
-	ProjectID        string         `json:"project_id"`
-	ProjectName      string         `json:"project_name"`
-	CreatedAt        string         `json:"created_at"`
-	BaseSnapshotID   string         `json:"base_snapshot_id,omitempty"`
-	BaseWorkspaceID  string         `json:"base_workspace_id,omitempty"`
-	MainWorkspaceID  string         `json:"main_workspace_id,omitempty"`
-	Backend          *BackendConfig `json:"backend,omitempty"`
+	Type            string         `json:"type"`
+	ProjectID       string         `json:"project_id"`
+	ProjectName     string         `json:"project_name"`
+	CreatedAt       string         `json:"created_at"`
+	BaseSnapshotID  string         `json:"base_snapshot_id,omitempty"`
+	BaseWorkspaceID string         `json:"base_workspace_id,omitempty"`
+	MainWorkspaceID string         `json:"main_workspace_id,omitempty"`
+	Backend         *BackendConfig `json:"backend,omitempty"`
 }
 
 // BackendType returns the configured backend type, or empty string if none.
@@ -52,13 +52,13 @@ func LoadProjectConfigAt(root string) (*ProjectConfig, error) {
 
 	var cfg ProjectConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse .fst/config.json: %w", err)
+		return nil, fmt.Errorf("failed to parse .jmp/config.json: %w", err)
 	}
 	if cfg.Type != ConfigTypeProject {
-		return nil, fmt.Errorf(".fst/config.json is not a project config (type=%q)", cfg.Type)
+		return nil, fmt.Errorf(".jmp/config.json is not a project config (type=%q)", cfg.Type)
 	}
 	if cfg.ProjectID == "" || cfg.ProjectName == "" {
-		return nil, fmt.Errorf(".fst/config.json missing project_id or project_name")
+		return nil, fmt.Errorf(".jmp/config.json missing project_id or project_name")
 	}
 
 	return &cfg, nil
@@ -88,7 +88,7 @@ func SaveProjectConfigAt(root string, cfg *ProjectConfig) error {
 	return store.AtomicWriteFile(path, data, 0644)
 }
 
-// isProjectRoot checks if dir contains a .fst/config.json with type "project".
+// isProjectRoot checks if dir contains a .jmp/config.json with type "project".
 func isProjectRoot(dir string) bool {
 	data, err := os.ReadFile(filepath.Join(dir, ConfigDirName, ConfigFileName))
 	if err != nil {
@@ -103,7 +103,7 @@ func isProjectRoot(dir string) bool {
 	return header.Type == ConfigTypeProject
 }
 
-// FindProjectRootFrom walks up the tree to find a project root with .fst/config.json (type "project").
+// FindProjectRootFrom walks up the tree to find a project root with .jmp/config.json (type "project").
 func FindProjectRootFrom(start string) (string, *ProjectConfig, error) {
 	dir := start
 	for {

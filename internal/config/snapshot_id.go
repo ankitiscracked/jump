@@ -1,6 +1,6 @@
 package config
 
-import "github.com/ankitiscracked/jump/internal/store"
+import "github.com/ankitiscracked/jmp/internal/store"
 
 // ComputeSnapshotID derives a content-addressed snapshot ID from the snapshot's
 // identity fields. Delegated to store.ComputeSnapshotID.

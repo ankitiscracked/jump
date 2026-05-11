@@ -23,13 +23,13 @@ func TestOpenAt(t *testing.T) {
 	if s.Root() != root {
 		t.Fatalf("expected root %s, got %s", root, s.Root())
 	}
-	if s.SnapshotsDir() != filepath.Join(root, ".fst", "snapshots") {
+	if s.SnapshotsDir() != filepath.Join(root, ".jmp", "snapshots") {
 		t.Fatalf("unexpected snapshots dir: %s", s.SnapshotsDir())
 	}
-	if s.ManifestsDir() != filepath.Join(root, ".fst", "manifests") {
+	if s.ManifestsDir() != filepath.Join(root, ".jmp", "manifests") {
 		t.Fatalf("unexpected manifests dir: %s", s.ManifestsDir())
 	}
-	if s.BlobsDir() != filepath.Join(root, ".fst", "blobs") {
+	if s.BlobsDir() != filepath.Join(root, ".jmp", "blobs") {
 		t.Fatalf("unexpected blobs dir: %s", s.BlobsDir())
 	}
 }
@@ -45,12 +45,12 @@ func TestOpenFromWorkspaceStandalone(t *testing.T) {
 }
 
 func TestOpenFromWorkspaceWithProject(t *testing.T) {
-	// Create project root with .fst/config.json (type "project")
+	// Create project root with .jmp/config.json (type "project")
 	projectRoot := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(projectRoot, ".fst"), 0755); err != nil {
-		t.Fatalf("mkdir .fst: %v", err)
+	if err := os.MkdirAll(filepath.Join(projectRoot, ".jmp"), 0755); err != nil {
+		t.Fatalf("mkdir .jmp: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(projectRoot, ".fst", "config.json"), []byte(`{"type":"project","project_id":"p1","project_name":"test"}`), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectRoot, ".jmp", "config.json"), []byte(`{"type":"project","project_id":"p1","project_name":"test"}`), 0644); err != nil {
 		t.Fatalf("write config.json: %v", err)
 	}
 

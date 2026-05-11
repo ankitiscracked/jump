@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ankitiscracked/jump/internal/config"
+	"github.com/ankitiscracked/jmp/internal/config"
 )
 
 // setupDriftWorkspaces creates two workspaces sharing a project store with a
@@ -17,11 +17,11 @@ func setupDriftWorkspaces(t *testing.T, ourFiles, theirFiles map[string]string) 
 	projectRoot := t.TempDir()
 
 	// Create project config
-	os.MkdirAll(filepath.Join(projectRoot, ".fst"), 0755)
-	os.WriteFile(filepath.Join(projectRoot, ".fst", "config.json"), []byte(`{"type":"project","project_id":"proj-test","project_name":"test-project"}`), 0644)
+	os.MkdirAll(filepath.Join(projectRoot, ".jmp"), 0755)
+	os.WriteFile(filepath.Join(projectRoot, ".jmp", "config.json"), []byte(`{"type":"project","project_id":"proj-test","project_name":"test-project"}`), 0644)
 
 	// Create shared store directories
-	for _, d := range []string{".fst/snapshots", ".fst/manifests", ".fst/blobs", ".fst/workspaces"} {
+	for _, d := range []string{".jmp/snapshots", ".jmp/manifests", ".jmp/blobs", ".jmp/workspaces"} {
 		os.MkdirAll(filepath.Join(projectRoot, d), 0755)
 	}
 
@@ -38,8 +38,8 @@ func setupDriftWorkspaces(t *testing.T, ourFiles, theirFiles map[string]string) 
 		if err := config.InitAt(ws.root, "proj-1", ws.id, ws.name, ""); err != nil {
 			t.Fatalf("InitAt: %v", err)
 		}
-		// Write .fstignore
-		os.WriteFile(filepath.Join(ws.root, ".fstignore"), []byte(".fst/\n"), 0644)
+		// Write .jmpignore
+		os.WriteFile(filepath.Join(ws.root, ".jmpignore"), []byte(".jmp/\n"), 0644)
 		// Write shared base file
 		os.WriteFile(filepath.Join(ws.root, "base.txt"), []byte("base"), 0644)
 	}
@@ -59,14 +59,15 @@ func setupDriftWorkspaces(t *testing.T, ourFiles, theirFiles map[string]string) 
 
 	author := &config.Author{Name: "T", Email: "t@t"}
 
-	// Create base snapshots
-	_, err = wsOurs.Snapshot(SnapshotOpts{Message: "base", Author: author})
+	// Create one shared base snapshot and point both workspaces at it.
+	base, err := wsOurs.Snapshot(SnapshotOpts{Message: "base", Author: author})
 	if err != nil {
 		t.Fatalf("snapshot ours base: %v", err)
 	}
-	_, err = wsTheirs.Snapshot(SnapshotOpts{Message: "base", Author: author})
-	if err != nil {
-		t.Fatalf("snapshot theirs base: %v", err)
+	wsTheirs.cfg.CurrentSnapshotID = base.SnapshotID
+	wsTheirs.cfg.BaseSnapshotID = base.SnapshotID
+	if err := wsTheirs.SaveConfig(); err != nil {
+		t.Fatalf("save theirs base config: %v", err)
 	}
 
 	// Write divergent files

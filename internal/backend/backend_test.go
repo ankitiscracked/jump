@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/gitstore"
-	"github.com/ankitiscracked/jump/internal/gitutil"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/gitstore"
+	"github.com/ankitiscracked/jmp/internal/gitutil"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 // stubExport is a no-op ExportFunc for tests that don't need real git export.
@@ -179,7 +179,7 @@ func setupProjectWithExport(t *testing.T, projectID, wsName string) (string, str
 	runGit(t, projectRoot, "config", "user.email", "test@test.com")
 
 	// Export the snapshot to git
-	configDir := filepath.Join(projectRoot, ".fst")
+	configDir := filepath.Join(projectRoot, ".jmp")
 	tmpDir := t.TempDir()
 	g := gitutil.NewEnv(projectRoot, tmpDir, filepath.Join(tmpDir, "index"))
 

@@ -8,9 +8,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/manifest"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/manifest"
+	"github.com/ankitiscracked/jmp/internal/store"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 

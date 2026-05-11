@@ -7,10 +7,10 @@ dist/
 build/
 bin/
 *.exe
-cli/fst
+cli/jmp
 
 # Local cache
-.fst/cache/
+.jmp/cache/
 *.log
 
 # IDE

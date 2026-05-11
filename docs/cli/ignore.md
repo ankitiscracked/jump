@@ -1,10 +1,10 @@
 # Ignore Patterns
 
-How `fst` decides which files to include in snapshots and manifests. Source: `internal/ignore/ignore.go`, `internal/ignore/default.fstignore`.
+How `jmp` decides which files to include in snapshots and manifests. Source: `internal/ignore/ignore.go`, `internal/ignore/default.jmpignore`.
 
 ## File location
 
-Place a `.fstignore` file at the workspace root (same directory as `.fst/`). It is created automatically by `fst workspace init` if not already present.
+Place a `.jmpignore` file at the workspace root (same directory as `.jmp/`). It is created automatically by `jmp workspace init` if not already present.
 
 ## Pattern syntax
 
@@ -25,8 +25,8 @@ Patterns are matched against both the file's basename and its full relative path
 
 - Patterns are evaluated in order; **last match wins**
 - Negation (`!`) re-includes a file that was previously excluded
-- Default patterns (embedded in the binary) are loaded first, then `.fstignore` patterns are appended
-- This means `.fstignore` entries can override defaults using negation
+- Default patterns (embedded in the binary) are loaded first, then `.jmpignore` patterns are appended
+- This means `.jmpignore` entries can override defaults using negation
 
 ### Example
 
@@ -41,11 +41,11 @@ temp/
 
 ## Default patterns
 
-Embedded from `internal/ignore/default.fstignore`:
+Embedded from `internal/ignore/default.jmpignore`:
 
 ```
-.fst/
-.fst
+.jmp/
+.jmp
 .git/
 .svn/
 .hg/
@@ -64,7 +64,7 @@ Thumbs.db
 *.dylib
 ```
 
-These are always active. User `.fstignore` patterns are appended after these defaults, so user patterns can negate them with `!`.
+These are always active. User `.jmpignore` patterns are appended after these defaults, so user patterns can negate them with `!`.
 
 ## Implementation details
 

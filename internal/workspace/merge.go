@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/manifest"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/manifest"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 // ConflictMode determines how conflicts are resolved during merge.
@@ -56,7 +56,7 @@ func (ws *Workspace) ApplyMerge(opts ApplyMergeOpts) (*MergeResult, error) {
 	}
 
 	// Record merge parents BEFORE applying changes so that if we crash
-	// mid-apply, the next 'fst snapshot' still creates a merge commit
+	// mid-apply, the next 'jmp snapshot' still creates a merge commit
 	// with the correct parent IDs in the history DAG.
 	parents := []string{plan.CurrentSnapshotID, plan.SourceSnapshotID}
 	if err := config.WritePendingMergeParentsAt(ws.root, parents); err != nil {

@@ -1,6 +1,6 @@
 // Package gitutil provides low-level git helpers used by the export, import,
 // and backend subsystems.  All functions are pure git operations with no
-// dependency on fst domain types (store, manifest, config, etc.).
+// dependency on jmp domain types (store, manifest, config, etc.).
 package gitutil
 
 import (

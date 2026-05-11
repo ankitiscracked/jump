@@ -22,17 +22,17 @@ Implementation: `internal/drift/drift.go` (`Report`, `Compute`, `CompareManifest
 
 ### Against Base Snapshot (`ComputeFromCache`)
 
-Compares the current filesystem against `base_snapshot_id` from the workspace config. This is the drift used by `fst workspace` status display. If no base snapshot exists, all files are reported as added.
+Compares the current filesystem against `base_snapshot_id` from the workspace config. This is the drift used by `jmp workspace` status display. If no base snapshot exists, all files are reported as added.
 
 ### Against Latest Snapshot (`ComputeFromLatestSnapshot`)
 
-Compares the current filesystem against the most recent snapshot (by `created_at`). This is used by `fst status` to show uncommitted changes.
+Compares the current filesystem against the most recent snapshot (by `created_at`). This is used by `jmp status` to show uncommitted changes.
 
 ### Between Two Manifests (`CompareManifests`)
 
-Compares any two manifests directly. Used by `fst drift` to compute each side's changes from their common ancestor.
+Compares any two manifests directly. Used by `jmp drift` to compute each side's changes from their common ancestor.
 
-## The `fst status` Command
+## The `jmp status` Command
 
 Displays single-workspace status:
 - Workspace name and path
@@ -43,9 +43,9 @@ Displays single-workspace status:
 
 Supports `--json` output.
 
-Implementation: `cmd/fst/commands/status.go` (`runStatus`).
+Implementation: `cmd/jmp/commands/status.go` (`runStatus`).
 
-## The `fst drift` Command
+## The `jmp drift` Command
 
 Compares the current workspace against another workspace (or the project's main workspace by default). Uses the DAG merge base algorithm to find their common ancestor, then computes changes on each side from that ancestor.
 
@@ -62,21 +62,21 @@ Modes:
 - `--json`: structured JSON output
 - `--agent-summary`: generates an AI risk assessment of the drift
 
-Implementation: `cmd/fst/commands/drift.go` (`runDrift`, `driftResult`).
+Implementation: `cmd/jmp/commands/drift.go` (`runDrift`, `driftResult`).
 
 ## Upstream Workspace
 
 A workspace can have an "upstream" -- the workspace that created its base snapshot. This is determined by examining the `workspace_id` field in the base snapshot's metadata. If it differs from the current workspace's ID, that workspace is the upstream.
 
-Used by `fst diff` (with no arguments) to default to diffing against the upstream.
+Used by `jmp diff` (with no arguments) to default to diffing against the upstream.
 
 Implementation: `internal/drift/drift.go` (`GetUpstreamWorkspace`).
 
 ## Agent Summaries
 
-When `--agent-summary` is used with `fst drift`, the system invokes a configured AI agent to produce a risk assessment. The agent receives structured context about both sides' changes and any detected conflicts.
+When `--agent-summary` is used with `jmp drift`, the system invokes a configured AI agent to produce a risk assessment. The agent receives structured context about both sides' changes and any detected conflicts.
 
-Implementation: `cmd/fst/commands/drift.go` (`generateDriftSummary`), `internal/agent/`.
+Implementation: `cmd/jmp/commands/drift.go` (`generateDriftSummary`), `internal/agent/`.
 
 ## Related Docs
 

@@ -28,7 +28,7 @@ func LoadAuthor() (*Author, error) {
 	return LoadGlobalAuthor()
 }
 
-// LoadGlobalAuthor reads author from ~/.config/fst/author.json
+// LoadGlobalAuthor reads author from ~/.config/jmp/author.json
 func LoadGlobalAuthor() (*Author, error) {
 	configDir, err := GetGlobalConfigDir()
 	if err != nil {
@@ -37,7 +37,7 @@ func LoadGlobalAuthor() (*Author, error) {
 	return loadAuthorFrom(filepath.Join(configDir, authorFileName))
 }
 
-// LoadProjectAuthor reads author from .fst/author.json in the current project
+// LoadProjectAuthor reads author from .jmp/author.json in the current project
 func LoadProjectAuthor() (*Author, error) {
 	root, err := FindWorkspaceRoot()
 	if err != nil {
@@ -46,7 +46,7 @@ func LoadProjectAuthor() (*Author, error) {
 	return loadAuthorFrom(filepath.Join(root, ConfigDirName, authorFileName))
 }
 
-// SaveGlobalAuthor writes author to ~/.config/fst/author.json
+// SaveGlobalAuthor writes author to ~/.config/jmp/author.json
 func SaveGlobalAuthor(a *Author) error {
 	configDir, err := GetGlobalConfigDir()
 	if err != nil {
@@ -55,7 +55,7 @@ func SaveGlobalAuthor(a *Author) error {
 	return saveAuthorTo(filepath.Join(configDir, authorFileName), a)
 }
 
-// SaveProjectAuthor writes author to .fst/author.json in the current project
+// SaveProjectAuthor writes author to .jmp/author.json in the current project
 func SaveProjectAuthor(a *Author) error {
 	root, err := FindWorkspaceRoot()
 	if err != nil {

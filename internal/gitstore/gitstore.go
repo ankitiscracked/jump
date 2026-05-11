@@ -1,4 +1,4 @@
-// Package gitstore implements the bridge between fst's snapshot model
+// Package gitstore implements the bridge between jmp's snapshot model
 // (store, manifest) and git's commit model.  It contains export, import,
 // mapping and metadata logic.
 package gitstore
@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/gitutil"
-	"github.com/ankitiscracked/jump/internal/manifest"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/gitutil"
+	"github.com/ankitiscracked/jmp/internal/manifest"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 // ---- Mapping ----
@@ -66,16 +66,16 @@ func SaveGitMapping(configDir string, mapping *GitMapping) error {
 // ---- Export metadata ----
 
 const (
-	FstMetaRef  = "refs/fst/meta"
-	FstMetaPath = ".fst-export/meta.json"
+	JmpMetaRef  = "refs/jmp/meta"
+	JmpMetaPath = ".jmp-export/meta.json"
 )
 
-// ExportMeta describes the exported project state stored in refs/fst/meta.
+// ExportMeta describes the exported project state stored in refs/jmp/meta.
 type ExportMeta struct {
-	Version    int                              `json:"version"`
-	UpdatedAt  string                           `json:"updated_at,omitempty"`
-	ProjectID  string                           `json:"project_id,omitempty"`
-	Workspaces map[string]ExportWorkspaceMeta   `json:"workspaces,omitempty"`
+	Version    int                            `json:"version"`
+	UpdatedAt  string                         `json:"updated_at,omitempty"`
+	ProjectID  string                         `json:"project_id,omitempty"`
+	Workspaces map[string]ExportWorkspaceMeta `json:"workspaces,omitempty"`
 }
 
 // ExportWorkspaceMeta describes a single workspace in the export metadata.
@@ -86,7 +86,7 @@ type ExportWorkspaceMeta struct {
 }
 
 // UpdateExportMetadata adds/updates workspace info in the export metadata
-// stored in refs/fst/meta.
+// stored in refs/jmp/meta.
 func UpdateExportMetadata(g gitutil.Env, cfg *config.WorkspaceConfig, branchName string) error {
 	if cfg == nil || cfg.WorkspaceID == "" {
 		return fmt.Errorf("missing workspace id for export metadata")
@@ -116,10 +116,10 @@ func UpdateExportMetadata(g gitutil.Env, cfg *config.WorkspaceConfig, branchName
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Join(g.WorkTree, ".fst-export"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(g.WorkTree, ".jmp-export"), 0755); err != nil {
 		return err
 	}
-	metaPath := filepath.Join(g.WorkTree, FstMetaPath)
+	metaPath := filepath.Join(g.WorkTree, JmpMetaPath)
 	if err := os.WriteFile(metaPath, data, 0644); err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func UpdateExportMetadata(g gitutil.Env, cfg *config.WorkspaceConfig, branchName
 		return err
 	}
 
-	parent, err := gitutil.RefSHA(g, FstMetaRef)
+	parent, err := gitutil.RefSHA(g, JmpMetaRef)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -147,17 +147,17 @@ func UpdateExportMetadata(g gitutil.Env, cfg *config.WorkspaceConfig, branchName
 		AuthorDate:    meta.UpdatedAt,
 		CommitterDate: meta.UpdatedAt,
 	}
-	sha, err := gitutil.CreateCommitWithParents(g, treeSHA, "FST export metadata", parents, metaCommit)
+	sha, err := gitutil.CreateCommitWithParents(g, treeSHA, "JMP export metadata", parents, metaCommit)
 	if err != nil {
 		return err
 	}
 
-	return gitutil.UpdateRef(g, FstMetaRef, sha)
+	return gitutil.UpdateRef(g, JmpMetaRef, sha)
 }
 
-// LoadExportMetadata loads the export metadata from refs/fst/meta.
+// LoadExportMetadata loads the export metadata from refs/jmp/meta.
 func LoadExportMetadata(g gitutil.Env) (*ExportMeta, error) {
-	data, err := gitutil.ShowFileAtRef(g, FstMetaRef, FstMetaPath)
+	data, err := gitutil.ShowFileAtRef(g, JmpMetaRef, JmpMetaPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -175,7 +175,7 @@ func LoadExportMetadata(g gitutil.Env) (*ExportMeta, error) {
 // LoadExportMetadataFromRepo loads export metadata by creating a temporary
 // gitutil.Env for the given repo root.
 func LoadExportMetadataFromRepo(repoRoot string) (*ExportMeta, error) {
-	tempDir, err := os.MkdirTemp("", "fst-export-meta-")
+	tempDir, err := os.MkdirTemp("", "jmp-export-meta-")
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func CollectExportBranches(meta *ExportMeta) []string {
 
 // ---- Snapshot helpers ----
 
-// CommitMetaFromSnapshot converts fst snapshot metadata into git commit
+// CommitMetaFromSnapshot converts jmp snapshot metadata into git commit
 // metadata (author/committer env vars).
 func CommitMetaFromSnapshot(snap *store.SnapshotMeta) *gitutil.CommitMeta {
 	if snap.CreatedAt == "" && snap.Agent == "" && snap.AuthorName == "" {
@@ -254,7 +254,7 @@ func AgentEmail(agent string) string {
 	if slug == "" {
 		slug = "agent"
 	}
-	return slug + "@fastest.local"
+	return slug + "@jmp.local"
 }
 
 // RestoreFilesFromManifest restores all files from a manifest using the
@@ -265,14 +265,14 @@ func RestoreFilesFromManifest(root string, s *store.Store, m *manifest.Manifest)
 		shouldExist[f.Path] = true
 	}
 
-	// Remove files that shouldn't exist (except .git and .fst)
+	// Remove files that shouldn't exist (except .git and .jmp)
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
 		relPath, _ := filepath.Rel(root, path)
 		relPath = filepath.ToSlash(relPath)
-		if strings.HasPrefix(relPath, ".git") || strings.HasPrefix(relPath, ".fst") || relPath == ".fst" {
+		if strings.HasPrefix(relPath, ".git") || strings.HasPrefix(relPath, ".jmp") || relPath == ".jmp" {
 			if info.IsDir() {
 				return filepath.SkipDir
 			}
@@ -467,7 +467,7 @@ func PushExportToRemote(projectRoot string, remoteName string) error {
 			return err
 		}
 	}
-	if err := gitutil.Push(projectRoot, remoteName, FstMetaRef); err != nil {
+	if err := gitutil.Push(projectRoot, remoteName, JmpMetaRef); err != nil {
 		return err
 	}
 

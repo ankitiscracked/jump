@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ankitiscracked/jump/internal/manifest"
+	"github.com/ankitiscracked/jmp/internal/manifest"
 )
 
 // seedSnapshot creates a manifest with the given files, writes it and its blobs

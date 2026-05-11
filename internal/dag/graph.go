@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ankitiscracked/jump/internal/ui"
+	"github.com/ankitiscracked/jmp/internal/ui"
 )
 
 // SnapshotInfo is the minimal snapshot data needed for graph rendering.

@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ankitiscracked/jump/internal/ui"
+	"github.com/ankitiscracked/jmp/internal/ui"
 )
 
 // MergeDiagramOpts configures the mini-diagram rendered after merge operations.

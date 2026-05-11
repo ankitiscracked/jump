@@ -1,5 +1,5 @@
 // Package workspace provides workspace-level operations. A Workspace owns
-// a single workspace's .fst/config.json, stat cache, and merge state, and
+// a single workspace's .jmp/config.json, stat cache, and merge state, and
 // references a project-level Store for snapshot/manifest/blob I/O.
 //
 // Commands should call Open(path) to get a Workspace, use its methods for
@@ -9,18 +9,18 @@ package workspace
 import (
 	"fmt"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 // Workspace represents an open workspace with its configuration and
 // project store. Use Open or OpenAt to create one.
 type Workspace struct {
-	root        string                // workspace root directory
-	cfg         *config.WorkspaceConfig // workspace config (.fst/config.json)
-	store       *store.Store          // project-level shared store
-	wsLock      *LockFile             // exclusive workspace lock
-	projectLock *LockFile             // shared project lock (prevents GC)
+	root        string                  // workspace root directory
+	cfg         *config.WorkspaceConfig // workspace config (.jmp/config.json)
+	store       *store.Store            // project-level shared store
+	wsLock      *LockFile               // exclusive workspace lock
+	projectLock *LockFile               // shared project lock (prevents GC)
 }
 
 // Open loads the workspace rooted at the current working directory.

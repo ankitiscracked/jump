@@ -12,8 +12,8 @@ import (
 // files whose stat metadata (mtime, size, mode, inode) hasn't changed since
 // the last check. Modeled after Git's index stat cache.
 type StatCache struct {
-	WrittenAt int64                      `json:"written_at"` // UnixNano when cache was last saved
-	Entries   map[string]StatCacheEntry  `json:"entries"`
+	WrittenAt int64                     `json:"written_at"` // UnixNano when cache was last saved
+	Entries   map[string]StatCacheEntry `json:"entries"`
 }
 
 // StatCacheEntry records the stat metadata and content hash for a single file.

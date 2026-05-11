@@ -2,13 +2,13 @@
 set -euo pipefail
 
 # =========================================
-#  fst CLI — End-to-End Workflow Tests
+#  jmp CLI — End-to-End Workflow Tests
 # =========================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CLI_DIR="$REPO_ROOT"
-FST=""
+JMP=""
 BUILD_DIR=""
 
 PASS_COUNT=0
@@ -30,11 +30,11 @@ NC='\033[0m'
 
 # ---- build ----
 
-build_fst() {
+build_jmp() {
     BUILD_DIR="$(mktemp -d)"
-    printf "Building fst binary... "
-    (cd "$CLI_DIR" && go build -o "$BUILD_DIR/fst" ./cmd/fst) 2>&1
-    FST="$BUILD_DIR/fst"
+    printf "Building jmp binary... "
+    (cd "$CLI_DIR" && go build -o "$BUILD_DIR/jmp" ./cmd/jmp) 2>&1
+    JMP="$BUILD_DIR/jmp"
     echo "done"
 }
 
@@ -46,8 +46,8 @@ setup_test() {
     cd "$TEST_DIR"
 
     # Pre-create author config so snapshot never launches TUI prompt
-    mkdir -p "$TEST_DIR/.config/fst"
-    cat > "$TEST_DIR/.config/fst/author.json" <<'JSON'
+    mkdir -p "$TEST_DIR/.config/jmp"
+    cat > "$TEST_DIR/.config/jmp/author.json" <<'JSON'
 {"name":"Test User","email":"test@example.com"}
 JSON
     export XDG_CONFIG_HOME="$TEST_DIR/.config"
@@ -61,11 +61,11 @@ teardown_test() {
     fi
 }
 
-# ---- run fst without aborting on error ----
+# ---- run jmp without aborting on error ----
 
-run_fst() {
+run_jmp() {
     local exit_code=0
-    OUTPUT=$("$FST" "$@" 2>&1) || exit_code=$?
+    OUTPUT=$("$JMP" "$@" 2>&1) || exit_code=$?
     LAST_EXIT=$exit_code
     return 0
 }
@@ -163,31 +163,31 @@ test_bootstrap() {
     setup_test
 
     # Create project
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     assert_contains "Project created"
 
     cd "$TEST_DIR/myproject/main"
 
     # Status
-    run_fst status
+    run_jmp status
     assert_exit_code 0
     assert_contains "main"
 
     # Status JSON
-    run_fst status --json
+    run_jmp status --json
     assert_exit_code 0
     assert_json_valid
     assert_json_field "workspace_name" "main"
 
     # Create file and snapshot
     echo "hello world" > hello.txt
-    run_fst snapshot -m "first snapshot"
+    run_jmp snapshot -m "first snapshot"
     assert_exit_code 0
     assert_contains "Snapshot created"
 
     # Log
-    run_fst log
+    run_jmp log
     assert_exit_code 0
     assert_contains "first snapshot"
 
@@ -197,7 +197,7 @@ test_bootstrap() {
 test_branching_and_merge() {
     setup_test
 
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
@@ -209,37 +209,37 @@ line3: shared content
 line4: shared content
 line5: original footer
 EOF
-    run_fst snapshot -m "base snapshot"
+    run_jmp snapshot -m "base snapshot"
     assert_exit_code 0
 
     # Fork
-    run_fst workspace create feature
+    run_jmp workspace create feature
     assert_exit_code 0
     assert_contains "Workspace created"
 
     # Feature: change the LAST line (non-overlapping with main's change)
     cd "$TEST_DIR/myproject/feature"
     sed -i.bak 's/line5: original footer/line5: FEATURE FOOTER/' app.txt && rm -f app.txt.bak
-    run_fst snapshot -m "feature work"
+    run_jmp snapshot -m "feature work"
     assert_exit_code 0
 
     # Main: change the FIRST line (non-overlapping with feature's change)
     cd "$TEST_DIR/myproject/main"
     sed -i.bak 's/line1: original header/line1: MAIN HEADER/' app.txt && rm -f app.txt.bak
-    run_fst snapshot -m "main work"
+    run_jmp snapshot -m "main work"
     assert_exit_code 0
 
     # Drift should detect changes
-    run_fst drift feature
+    run_jmp drift feature
     assert_exit_code 1
 
     # Diff names-only
-    run_fst diff feature --names-only
+    run_jmp diff feature --names-only
     assert_exit_code 1
     assert_contains "app.txt"
 
     # Merge: same file, different lines → line-level auto-merge
-    run_fst merge feature
+    run_jmp merge feature
     assert_exit_code 0
     assert_contains "Merge complete"
     assert_contains "Auto-merged"
@@ -254,7 +254,7 @@ EOF
 test_merge_conflict_resolution() {
     setup_test
 
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
@@ -263,31 +263,31 @@ setting_a = 1
 setting_b = 2
 setting_c = 3
 EOF
-    run_fst snapshot -m "initial config"
+    run_jmp snapshot -m "initial config"
     assert_exit_code 0
 
-    run_fst workspace create branch
+    run_jmp workspace create branch
     assert_exit_code 0
 
     # Branch: change setting_b
     cd "$TEST_DIR/myproject/branch"
     sed -i.bak 's/setting_b = 2/setting_b = BRANCH_VALUE/' config.txt && rm -f config.txt.bak
-    run_fst snapshot -m "branch config"
+    run_jmp snapshot -m "branch config"
     assert_exit_code 0
 
     # Main: change same line differently
     cd "$TEST_DIR/myproject/main"
     sed -i.bak 's/setting_b = 2/setting_b = MAIN_VALUE/' config.txt && rm -f config.txt.bak
-    run_fst snapshot -m "main config"
+    run_jmp snapshot -m "main config"
     assert_exit_code 0
 
     # Dry-run shows conflicts (exit 0 for dry-run)
-    run_fst merge branch --dry-run
+    run_jmp merge branch --dry-run
     assert_exit_code 0
     assert_contains "config.txt"
 
     # Merge --theirs resolves with their version
-    run_fst merge branch --theirs
+    run_jmp merge branch --theirs
     assert_exit_code 0
     assert_contains "Merge complete"
 
@@ -300,44 +300,44 @@ EOF
 test_snapshot_history() {
     setup_test
 
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
     echo "v1" > data.txt
-    run_fst snapshot -m "version one"
+    run_jmp snapshot -m "version one"
     assert_exit_code 0
 
     echo "v2" > data.txt
-    run_fst snapshot -m "version two"
+    run_jmp snapshot -m "version two"
     assert_exit_code 0
 
     echo "v3" > data.txt
-    run_fst snapshot -m "version three"
+    run_jmp snapshot -m "version three"
     assert_exit_code 0
 
     # Log shows all
-    run_fst log
+    run_jmp log
     assert_exit_code 0
     assert_contains "version one"
     assert_contains "version two"
     assert_contains "version three"
 
     # Log limit
-    run_fst log -n 1
+    run_jmp log -n 1
     assert_exit_code 0
     assert_contains "version three"
     assert_not_contains "version one"
 
     # Dirty change + dry-run restore
     echo "v4-dirty" > data.txt
-    run_fst restore --dry-run
+    run_jmp restore --dry-run
     assert_exit_code 0
     assert_contains "dry run"
     assert_file_contains "$TEST_DIR/myproject/main/data.txt" "v4-dirty"
 
     # Actual restore
-    run_fst restore
+    run_jmp restore
     assert_exit_code 0
     assert_contains "Restored"
     assert_file_contains "$TEST_DIR/myproject/main/data.txt" "v3"
@@ -349,41 +349,41 @@ test_snapshot_history() {
 test_history_rewrite() {
     setup_test
 
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
     echo "snap1" > file.txt
-    run_fst snapshot -m "first commit"
+    run_jmp snapshot -m "first commit"
     assert_exit_code 0
     local SNAP1
     SNAP1=$(extract_snapshot_id)
 
     echo "snap2" > file.txt
-    run_fst snapshot -m "second commit"
+    run_jmp snapshot -m "second commit"
     assert_exit_code 0
     local SNAP2
     SNAP2=$(extract_snapshot_id)
 
     echo "snap3" > file.txt
-    run_fst snapshot -m "third commit"
+    run_jmp snapshot -m "third commit"
     assert_exit_code 0
     local SNAP3
     SNAP3=$(extract_snapshot_id)
 
     # Edit message
-    run_fst edit "$SNAP2" -m "edited message"
+    run_jmp edit "$SNAP2" -m "edited message"
     assert_exit_code 0
     assert_contains "Updated snapshot"
 
-    run_fst log
+    run_jmp log
     assert_exit_code 0
     assert_contains "edited message"
     assert_not_contains "second commit"
 
     # After edit, IDs in the chain are rewritten. Read the current head.
     local CURRENT_ID
-    CURRENT_ID=$(read_config_field .fst/config.json current_snapshot_id)
+    CURRENT_ID=$(read_config_field .jmp/config.json current_snapshot_id)
 
     # Walk the chain to find the oldest snapshot
     local chain_ids=()
@@ -392,7 +392,7 @@ test_history_rewrite() {
         chain_ids+=("$walk_id")
         # Find the meta file and read parent
         local meta_files
-        meta_files=$(find "$TEST_DIR/myproject/.fst/snapshots" -name "${walk_id}.meta.json" 2>/dev/null || true)
+        meta_files=$(find "$TEST_DIR/myproject/.jmp/snapshots" -name "${walk_id}.meta.json" 2>/dev/null || true)
         if [[ -z "$meta_files" ]]; then
             break
         fi
@@ -410,11 +410,11 @@ print(parents[0] if parents else '')
     local newest="${chain_ids[0]}"
 
     if [[ ${#chain_ids[@]} -ge 2 ]]; then
-        run_fst squash "${oldest}..${newest}" -m "squashed all"
+        run_jmp squash "${oldest}..${newest}" -m "squashed all"
         assert_exit_code 0
         assert_contains "Squashed"
 
-        run_fst log
+        run_jmp log
         assert_exit_code 0
         assert_contains "squashed all"
     else
@@ -427,43 +427,43 @@ print(parents[0] if parents else '')
 test_info_commands() {
     setup_test
 
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
     echo "data" > file.txt
-    run_fst snapshot -m "initial"
+    run_jmp snapshot -m "initial"
     assert_exit_code 0
 
-    run_fst workspace create secondary
+    run_jmp workspace create secondary
     assert_exit_code 0
 
     # Info from workspace
     cd "$TEST_DIR/myproject/main"
-    run_fst info
+    run_jmp info
     assert_exit_code 0
     assert_contains "main"
 
     # Info JSON
-    run_fst info --json
+    run_jmp info --json
     assert_exit_code 0
     assert_json_valid
     assert_json_field "workspace_name" "main"
 
     # Info workspaces
-    run_fst info workspaces
+    run_jmp info workspaces
     assert_exit_code 0
     assert_contains "main"
     assert_contains "secondary"
 
     # Info project
-    run_fst info project
+    run_jmp info project
     assert_exit_code 0
     assert_contains "myproject"
     assert_contains "Workspaces"
 
     # Info workspace by name
-    run_fst info workspace main
+    run_jmp info workspace main
     assert_exit_code 0
     assert_contains "main"
 
@@ -479,33 +479,33 @@ test_git_export() {
     export GIT_COMMITTER_EMAIL="test@example.com"
 
     # Create project with main workspace
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
     # Create a shared base snapshot in main
     echo "v1" > file.txt
-    run_fst snapshot -m "base snapshot"
+    run_jmp snapshot -m "base snapshot"
     assert_exit_code 0
 
     # Create feature workspace (forks from main)
-    run_fst workspace create feature
+    run_jmp workspace create feature
     assert_exit_code 0
 
     # Add work to feature
     cd "$TEST_DIR/myproject/feature"
     echo "feature work" > feature.txt
-    run_fst snapshot -m "feature snapshot"
+    run_jmp snapshot -m "feature snapshot"
     assert_exit_code 0
 
     # Add more work to main
     cd "$TEST_DIR/myproject/main"
     echo "v2" > file.txt
-    run_fst snapshot -m "main snapshot two"
+    run_jmp snapshot -m "main snapshot two"
     assert_exit_code 0
 
     # Export all workspaces (project-level)
-    run_fst git export --init
+    run_jmp git export --init
     assert_exit_code 0
     assert_contains "Exported"
 
@@ -542,7 +542,7 @@ test_git_export() {
     fi
 
     # Incremental export (no new commits)
-    run_fst git export
+    run_jmp git export
     assert_exit_code 0
     assert_contains "up to date"
 
@@ -552,36 +552,36 @@ test_git_export() {
 test_gc() {
     setup_test
 
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
     echo "v1" > file.txt
-    run_fst snapshot -m "gc snap one"
+    run_jmp snapshot -m "gc snap one"
     assert_exit_code 0
 
     echo "v2" > file.txt
-    run_fst snapshot -m "gc snap two"
+    run_jmp snapshot -m "gc snap two"
     assert_exit_code 0
     local SNAP2
     SNAP2=$(extract_snapshot_id)
 
     echo "v3" > file.txt
-    run_fst snapshot -m "gc snap three"
+    run_jmp snapshot -m "gc snap three"
     assert_exit_code 0
 
     # Drop middle snapshot to create unreachable artifact
-    run_fst drop "$SNAP2"
+    run_jmp drop "$SNAP2"
     assert_exit_code 0
     assert_contains "Dropped"
 
     # GC from project root
     cd "$TEST_DIR/myproject"
-    run_fst gc --dry-run
+    run_jmp gc --dry-run
     assert_exit_code 0
     assert_contains "Would delete"
 
-    run_fst gc
+    run_jmp gc
     assert_exit_code 0
     assert_contains "Deleted"
 
@@ -597,26 +597,26 @@ test_backend_set_git() {
     export GIT_COMMITTER_EMAIL="test@example.com"
 
     # Create project with a snapshot
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
     echo "v1" > file.txt
-    run_fst snapshot -m "initial"
+    run_jmp snapshot -m "initial"
     assert_exit_code 0
 
     # Backend status before set → none
-    run_fst backend status
+    run_jmp backend status
     assert_exit_code 0
     assert_contains "none"
 
     # Set git backend
-    run_fst backend set git
+    run_jmp backend set git
     assert_exit_code 0
     assert_contains "Backend set to git"
 
     # Backend status after set → git
-    run_fst backend status
+    run_jmp backend status
     assert_exit_code 0
     assert_contains "git"
 
@@ -632,11 +632,11 @@ test_backend_set_git() {
 
     # Create a second snapshot — should trigger auto-export
     echo "v2" > file.txt
-    run_fst snapshot -m "second snapshot"
+    run_jmp snapshot -m "second snapshot"
     assert_exit_code 0
 
     # Give background sync a moment and then push manually to ensure export
-    run_fst backend push
+    run_jmp backend push
     assert_exit_code 0
 
     # Verify git has the new commit
@@ -646,12 +646,12 @@ test_backend_set_git() {
     fi
 
     # Turn backend off
-    run_fst backend off
+    run_jmp backend off
     assert_exit_code 0
     assert_contains "Backend disabled"
 
     # Backend status → none
-    run_fst backend status
+    run_jmp backend status
     assert_exit_code 0
     assert_contains "none"
 
@@ -667,17 +667,17 @@ test_backend_sync_local() {
     export GIT_COMMITTER_EMAIL="test@example.com"
 
     # Create project, snapshot, set git backend
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
     echo "v1" > file.txt
-    run_fst snapshot -m "base snapshot"
+    run_jmp snapshot -m "base snapshot"
     assert_exit_code 0
     local SNAP1
     SNAP1=$(extract_snapshot_id)
 
-    run_fst backend set git
+    run_jmp backend set git
     assert_exit_code 0
 
     # Add a commit directly to git (simulating external change)
@@ -710,17 +710,17 @@ test_backend_sync_local() {
 
     # Run git import --rebuild to re-import all commits (including the external one)
     cd "$TEST_DIR/myproject/main"
-    run_fst git import "$TEST_DIR/myproject" --rebuild
+    run_jmp git import "$TEST_DIR/myproject" --rebuild
     assert_exit_code 0
 
     # Log should show the imported commit
-    run_fst log
+    run_jmp log
     assert_exit_code 0
     assert_contains "external commit"
 
     # The current snapshot should have changed from SNAP1 (rebuilt from scratch)
     local current_snap
-    current_snap=$(read_config_field "$TEST_DIR/myproject/main/.fst/config.json" "current_snapshot_id")
+    current_snap=$(read_config_field "$TEST_DIR/myproject/main/.jmp/config.json" "current_snapshot_id")
     if [[ "$current_snap" == "$SNAP1" ]]; then
         fail "expected current snapshot to change after import"
     fi
@@ -737,28 +737,28 @@ test_backend_export_import_roundtrip() {
     export GIT_COMMITTER_EMAIL="test@example.com"
 
     # Create project with multiple snapshots across two workspaces
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
     echo "v1" > file.txt
-    run_fst snapshot -m "main first"
+    run_jmp snapshot -m "main first"
     assert_exit_code 0
 
     echo "v2" > file.txt
-    run_fst snapshot -m "main second"
+    run_jmp snapshot -m "main second"
     assert_exit_code 0
 
-    run_fst workspace create feature
+    run_jmp workspace create feature
     assert_exit_code 0
 
     cd "$TEST_DIR/myproject/feature"
     echo "feat" > feat.txt
-    run_fst snapshot -m "feature work"
+    run_jmp snapshot -m "feature work"
     assert_exit_code 0
 
     # Export to git
-    run_fst git export --init
+    run_jmp git export --init
     assert_exit_code 0
     assert_contains "Exported"
 
@@ -793,12 +793,12 @@ test_backend_export_import_roundtrip() {
 
     # Import with --rebuild to re-import all commits (including the external one)
     cd "$TEST_DIR/myproject/main"
-    run_fst git import "$TEST_DIR/myproject" --rebuild
+    run_jmp git import "$TEST_DIR/myproject" --rebuild
     assert_exit_code 0
     assert_contains "Imported"
 
     # Log should show the imported commit
-    run_fst log
+    run_jmp log
     assert_exit_code 0
     assert_contains "roundtrip commit"
 
@@ -807,7 +807,7 @@ test_backend_export_import_roundtrip() {
     assert_contains "main first"
 
     # Re-export should include the imported snapshot (no new exports since it came from git)
-    run_fst git export
+    run_jmp git export
     assert_exit_code 0
 
     teardown_test
@@ -816,44 +816,44 @@ test_backend_export_import_roundtrip() {
 test_exit_codes() {
     setup_test
 
-    run_fst project create myproject --no-snapshot
+    run_jmp project create myproject --no-snapshot
     assert_exit_code 0
     cd "$TEST_DIR/myproject/main"
 
     echo "base" > file.txt
-    run_fst snapshot -m "base"
+    run_jmp snapshot -m "base"
     assert_exit_code 0
 
     # Status always exits 0
-    run_fst status
+    run_jmp status
     assert_exit_code 0
 
     # Create feature (identical to main)
-    run_fst workspace create feature
+    run_jmp workspace create feature
     assert_exit_code 0
 
     # No drift → exit 0
-    run_fst drift feature
+    run_jmp drift feature
     assert_exit_code 0
 
     # No diff → exit 0
-    run_fst diff feature
+    run_jmp diff feature
     assert_exit_code 0
     assert_contains "No differences"
 
     # Introduce drift in feature
     cd "$TEST_DIR/myproject/feature"
     echo "feature change" >> file.txt
-    run_fst snapshot -m "feature diverge"
+    run_jmp snapshot -m "feature diverge"
     assert_exit_code 0
 
     # From main: drift → exit 1
     cd "$TEST_DIR/myproject/main"
-    run_fst drift feature
+    run_jmp drift feature
     assert_exit_code 1
 
     # Diff → exit 1
-    run_fst diff feature --names-only
+    run_jmp diff feature --names-only
     assert_exit_code 1
     assert_contains "file.txt"
 
@@ -899,11 +899,11 @@ trap cleanup EXIT
 
 main() {
     echo "========================================="
-    echo " fst E2E Tests"
+    echo " jmp E2E Tests"
     echo "========================================="
     echo ""
 
-    build_fst
+    build_jmp
     echo ""
 
     run_test test_bootstrap

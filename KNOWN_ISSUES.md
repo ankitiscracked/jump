@@ -26,15 +26,15 @@
 - Pre-operation snapshot failures now abort the destructive operation. Users can opt out with `--no-pre-snapshot` (merge), `--hard` (pull), or `--no-snapshot` (sync).
 
 ### ~~8. Merge State Corruption on Mid-Apply Crash~~ FIXED
-- Merge-parents.json is now written BEFORE applying file changes, not after. If a crash occurs mid-apply, the next `fst snapshot` still creates a merge commit with correct parent IDs. If all actions fail, merge parents are cleared.
+- Merge-parents.json is now written BEFORE applying file changes, not after. If a crash occurs mid-apply, the next `jmp snapshot` still creates a merge commit with correct parent IDs. If all actions fail, merge parents are cleared.
 
 ### ~~9. Rollback Has No Atomicity or Recovery~~ FIXED
-- Rollback now creates an auto-snapshot before applying changes, providing a recovery point. If rollback is interrupted, users can `fst rollback --to <pre-rollback-snapshot>` to restore the previous state. Snapshot failure aborts the rollback.
+- Rollback now creates an auto-snapshot before applying changes, providing a recovery point. If rollback is interrupted, users can `jmp rollback --to <pre-rollback-snapshot>` to restore the previous state. Snapshot failure aborts the rollback.
 
 ## MEDIUM: Design Flaws
 
 ### ~~10. No Workspace-Level Locking~~ FIXED
-- `workspace.Open()` now acquires an exclusive flock on `.fst/lock`. Concurrent operations on the same workspace block until the first completes. `Close()` releases the lock.
+- `workspace.Open()` now acquires an exclusive flock on `.jmp/lock`. Concurrent operations on the same workspace block until the first completes. `Close()` releases the lock.
 
 ### ~~11. `workspaces` Command Uses Global Index, Not Project Registry~~ FIXED
 - Now uses project-level registry consistently. Global index removed.
@@ -65,7 +65,7 @@
 ### ~~19. Merge Base Tiebreaker Non-Deterministic~~ FIXED
 - When two merge base candidates have identical timestamps, the tiebreaker now uses lexicographic comparison of snapshot IDs (`item.id > bestID`) for deterministic results.
 
-### ~~20. `fst clone` Silently Ignores Config Save Errors~~ FIXED
+### ~~20. `jmp clone` Silently Ignores Config Save Errors~~ FIXED
 - `config.LoadAt()` and `config.SaveAt()` errors in clone now return errors instead of being silently ignored.
 
 ## Priority Summary

@@ -62,9 +62,9 @@ func TestPathNormalization(t *testing.T) {
 
 func TestLoadFromFileIncludesDefaults(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, ".fstignore")
+	path := filepath.Join(dir, ".jmpignore")
 	if err := os.WriteFile(path, []byte("# comment\ncustom.log\n"), 0644); err != nil {
-		t.Fatalf("write .fstignore: %v", err)
+		t.Fatalf("write .jmpignore: %v", err)
 	}
 
 	m, err := LoadFromFile(path)

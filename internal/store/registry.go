@@ -11,7 +11,7 @@ import (
 const workspacesDirName = "workspaces"
 
 // WorkspaceInfo describes a workspace registered in the project.
-// Each workspace is stored as a separate file under .fst/workspaces/<id>.json,
+// Each workspace is stored as a separate file under .jmp/workspaces/<id>.json,
 // so concurrent updates from different workspaces never conflict.
 type WorkspaceInfo struct {
 	WorkspaceID       string `json:"workspace_id"`

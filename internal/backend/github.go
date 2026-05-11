@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/gitstore"
-	"github.com/ankitiscracked/jump/internal/gitutil"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/gitstore"
+	"github.com/ankitiscracked/jmp/internal/gitutil"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 // GitHubBackend exports snapshots to git and syncs with a GitHub remote.
@@ -68,7 +68,7 @@ func (b *GitHubBackend) Sync(projectRoot string, opts *SyncOptions) error {
 	// Handle diverged workspaces
 	for _, div := range result.Diverged {
 		if opts == nil || opts.OnDivergence == nil {
-			return fmt.Errorf("workspace '%s' has diverged from remote; run 'fst sync' interactively to resolve", div.WorkspaceName)
+			return fmt.Errorf("workspace '%s' has diverged from remote; run 'jmp sync' interactively to resolve", div.WorkspaceName)
 		}
 		mergedID, mergeErr := opts.OnDivergence(div)
 		if mergeErr != nil {
@@ -115,19 +115,19 @@ func (b *GitHubBackend) Pull(projectRoot string) error {
 	return err
 }
 
-// FetchFromRemote fetches all branches and fst metadata from the remote.
+// FetchFromRemote fetches all branches and jmp metadata from the remote.
 func FetchFromRemote(projectRoot, remoteName string) error {
 	if err := gitutil.RunCommand(projectRoot, "fetch", remoteName); err != nil {
 		return err
 	}
-	return gitutil.RunCommand(projectRoot, "fetch", remoteName, "refs/fst/*:refs/fst/*")
+	return gitutil.RunCommand(projectRoot, "fetch", remoteName, "refs/jmp/*:refs/jmp/*")
 }
 
 // FastForwardBranches updates local branch refs to match remote tracking branches
 // only when the remote is strictly ahead (fast-forward). If branches have diverged,
 // the branch is left unchanged — the subsequent import + merge will handle it.
 func FastForwardBranches(projectRoot, remoteName string) error {
-	tempDir, err := os.MkdirTemp("", "fst-ff-")
+	tempDir, err := os.MkdirTemp("", "jmp-ff-")
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ type ImportResult struct {
 func IncrementalImportFromGit(projectRoot string) (*ImportResult, error) {
 	result := &ImportResult{}
 
-	configDir := filepath.Join(projectRoot, ".fst")
+	configDir := filepath.Join(projectRoot, ".jmp")
 	mapping, err := gitstore.LoadGitMapping(configDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load git mapping: %w", err)
@@ -215,7 +215,7 @@ func IncrementalImportFromGit(projectRoot string) (*ImportResult, error) {
 		originalCommitToSnapshot[k] = v
 	}
 
-	tempDir, err := os.MkdirTemp("", "fst-incr-import-")
+	tempDir, err := os.MkdirTemp("", "jmp-incr-import-")
 	if err != nil {
 		return nil, err
 	}
@@ -239,13 +239,13 @@ func IncrementalImportFromGit(projectRoot string) (*ImportResult, error) {
 
 	s := store.OpenAt(projectRoot)
 
-	workTempDir, err := os.MkdirTemp("", "fst-incr-worktree-")
+	workTempDir, err := os.MkdirTemp("", "jmp-incr-worktree-")
 	if err != nil {
 		return nil, err
 	}
 	defer os.RemoveAll(workTempDir)
 
-	importIndexDir, err := os.MkdirTemp("", "fst-incr-index-")
+	importIndexDir, err := os.MkdirTemp("", "jmp-incr-index-")
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +308,7 @@ func IncrementalImportFromGit(projectRoot string) (*ImportResult, error) {
 			}
 
 			agentName := ""
-			if strings.HasSuffix(strings.ToLower(info.AuthorEmail), "@fastest.local") {
+			if strings.HasSuffix(strings.ToLower(info.AuthorEmail), "@jmp.local") {
 				agentName = info.AuthorName
 			}
 
@@ -393,7 +393,7 @@ func IncrementalImportFromGit(projectRoot string) (*ImportResult, error) {
 
 // ensureWorkspaceForImport finds or creates a workspace directory and config.
 func ensureWorkspaceForImport(wsRoot, projectID, workspaceID, wsName string) (*config.WorkspaceConfig, error) {
-	if _, err := os.Stat(filepath.Join(wsRoot, ".fst", "config.json")); err == nil {
+	if _, err := os.Stat(filepath.Join(wsRoot, ".jmp", "config.json")); err == nil {
 		// Workspace exists
 		return config.LoadAt(wsRoot)
 	}

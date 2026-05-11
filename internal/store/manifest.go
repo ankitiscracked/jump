@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ankitiscracked/jump/internal/manifest"
+	"github.com/ankitiscracked/jmp/internal/manifest"
 )
 
 // LoadManifest reads and parses a manifest by its content hash.

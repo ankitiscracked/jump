@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ankitiscracked/jump/internal/ignore"
+	"github.com/ankitiscracked/jmp/internal/ignore"
 )
 
 const (

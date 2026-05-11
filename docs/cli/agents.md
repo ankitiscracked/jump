@@ -1,6 +1,6 @@
 # Coding Agent Integration
 
-How `fst` detects and invokes coding agents for summaries and merge conflict resolution. Source: `internal/agent/agent.go`, `cmd/fst/commands/agents.go`.
+How `jmp` detects and invokes coding agents for summaries and merge conflict resolution. Source: `internal/agent/agent.go`, `cmd/jmp/commands/agents.go`.
 
 ## Supported agents
 
@@ -17,11 +17,11 @@ Defined as `KnownAgents` in `internal/agent/agent.go`.
 
 ## Agent detection
 
-Agents are detected by checking if their command is on `PATH` using `exec.LookPath`. The `fst agents list` command shows all known agents and whether each is currently available.
+Agents are detected by checking if their command is on `PATH` using `exec.LookPath`. The `jmp agents list` command shows all known agents and whether each is currently available.
 
 ## Preferred agent
 
-Set with `fst agents set-preferred <name>`. Stored in `~/.config/fst/agents.json`:
+Set with `jmp agents set-preferred <name>`. Stored in `~/.config/jmp/agents.json`:
 
 ```json
 {
@@ -32,7 +32,7 @@ Set with `fst agents set-preferred <name>`. Stored in `~/.config/fst/agents.json
 When an agent is needed (for summaries or merges), the selection order is:
 
 1. `--agent` flag (on commands that support it)
-2. `FST_AGENT` environment variable
+2. `JMP_AGENT` environment variable
 3. Preferred agent from `agents.json`
 4. First available agent from the known agents list
 
@@ -42,15 +42,15 @@ Agents are invoked for four tasks:
 
 ### Snapshot summaries (`--agent-summary`)
 
-`InvokeSummary(agentName, diffText)` -- generates a concise summary of changes in a snapshot. Used by `fst snapshot --agent-summary`.
+`InvokeSummary(agentName, diffText)` -- generates a concise summary of changes in a snapshot. Used by `jmp snapshot --agent-summary`.
 
 ### Conflict summaries
 
-`InvokeConflictSummary(agentName, conflictText)` -- summarizes detected conflicts between workspaces. Used by `fst drift --agent-summary`.
+`InvokeConflictSummary(agentName, conflictText)` -- summarizes detected conflicts between workspaces. Used by `jmp drift --agent-summary`.
 
 ### Drift summaries
 
-`InvokeDriftSummary(agentName, driftText)` -- summarizes drift between workspaces. Used by `fst drift --agent-summary`.
+`InvokeDriftSummary(agentName, driftText)` -- summarizes drift between workspaces. Used by `jmp drift --agent-summary`.
 
 ### Merge conflict resolution
 
@@ -64,26 +64,26 @@ The agent's output is parsed by looking for a `---MERGED CODE---` separator. Eve
 ## Commands
 
 ```
-fst agents                      # List detected agents (runs list by default)
-fst agents list                 # Show all known agents with availability (alias: ls)
-fst agents set-preferred claude # Set preferred agent
+jmp agents                      # List detected agents (runs list by default)
+jmp agents list                 # Show all known agents with availability (alias: ls)
+jmp agents set-preferred claude # Set preferred agent
 ```
 
 ## Commands that use agents
 
 | Command | Flag | Purpose |
 |---------|------|---------|
-| `fst snapshot` | `--agent-summary`, `--agent` | Generate snapshot summary |
-| `fst drift` | `--agent-summary` | Summarize drift/conflicts |
-| `fst merge` | `--agent-summary` | Summarize merge; agent mode resolves conflicts |
-| `fst pull` | `--agent-summary` | Summarize pulled changes |
-| `fst sync` | `--agent-summary` | Summarize sync results |
+| `jmp snapshot` | `--agent-summary`, `--agent` | Generate snapshot summary |
+| `jmp drift` | `--agent-summary` | Summarize drift/conflicts |
+| `jmp merge` | `--agent-summary` | Summarize merge; agent mode resolves conflicts |
+| `jmp pull` | `--agent-summary` | Summarize pulled changes |
+| `jmp sync` | `--agent-summary` | Summarize sync results |
 
-The default merge conflict mode is **Agent** -- `fst merge` first auto-merges files with non-overlapping line changes via diff3, then invokes the preferred agent to resolve any remaining true conflicts. Use `--manual`, `--theirs`, or `--ours` to override the conflict resolution strategy (auto-merge still applies in all modes).
+The default merge conflict mode is **Agent** -- `jmp merge` first auto-merges files with non-overlapping line changes via diff3, then invokes the preferred agent to resolve any remaining true conflicts. Use `--manual`, `--theirs`, or `--ours` to override the conflict resolution strategy (auto-merge still applies in all modes).
 
 ## Packaged workflow skill
 
 This repository ships a small agent workflow skill at
-`.agents/skills/fst-agent-workflow/SKILL.md`. It teaches an agent to call
-`fst` directly for task start/status/finish, snapshots, drift checks, events,
+`.agents/skills/jmp-agent-workflow/SKILL.md`. It teaches an agent to call
+`jmp` directly for task start/status/finish, snapshots, drift checks, events,
 and Git export while leaving code search, edits, and tests to the agent.

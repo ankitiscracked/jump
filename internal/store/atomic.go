@@ -12,7 +12,7 @@ import (
 // process crashes mid-write.
 func AtomicWriteFile(path string, data []byte, perm os.FileMode) error {
 	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".fst-tmp-*")
+	tmp, err := os.CreateTemp(dir, ".jmp-tmp-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}

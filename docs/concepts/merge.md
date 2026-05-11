@@ -12,7 +12,7 @@ The merge operates on three manifests:
 
 Merge inputs are snapshot-based -- working tree files are not used as merge inputs. The merge aborts if it would overwrite local uncommitted changes that overlap with files the merge would touch.
 
-Implementation: `cmd/fst/commands/merge.go` (`runMerge`), `internal/store/merge.go` (`computeMergeActions`).
+Implementation: `cmd/jmp/commands/merge.go` (`runMerge`), `internal/store/merge.go` (`computeMergeActions`).
 
 ## Merge Actions
 
@@ -46,7 +46,7 @@ In all modes, files with non-overlapping changes are auto-merged first via diff3
 
 When agent resolution fails for a file, the merge falls back to manual conflict markers for that file.
 
-Implementation: `cmd/fst/commands/merge.go` (`ConflictMode`, conflict handling in `runMerge`), `internal/workspace/merge.go` (`ApplyMerge`).
+Implementation: `cmd/jmp/commands/merge.go` (`ConflictMode`, conflict handling in `runMerge`), `internal/workspace/merge.go` (`ApplyMerge`).
 
 ## Conflict Detection
 
@@ -58,7 +58,7 @@ Asymmetric conflict detection. Uses the current workspace's `base_snapshot_id` a
 
 ### `DetectFromAncestor(root, otherRoot, commonAncestorID, includeDirty)`
 
-Symmetric conflict detection with an explicit ancestor ID. When `includeDirty=false`, both sides use their latest snapshots. When `includeDirty=true`, both sides use current filesystem files. Used by `fst drift` for accurate conflict reporting.
+Symmetric conflict detection with an explicit ancestor ID. When `includeDirty=false`, both sides use their latest snapshots. When `includeDirty=true`, both sides use current filesystem files. Used by `jmp drift` for accurate conflict reporting.
 
 ### Line-Level Conflicts
 
@@ -94,15 +94,15 @@ type Report struct {
 
 ## Dry Run
 
-`fst merge --dry-run` previews the merge without modifying files. It shows:
+`jmp merge --dry-run` previews the merge without modifying files. It shows:
 - The merge plan (files to apply, conflicts, in-sync)
 - Line-level conflict details with region line numbers and content previews
 - Auto-merged file count (files modified in both workspaces with non-overlapping line changes)
 - Optional AI summary with `--agent-summary`
 
-## The `fst diff` Command
+## The `jmp diff` Command
 
-Shows line-by-line content differences between two workspaces. Unlike `fst drift` (which shows file-level changes from a common ancestor), `fst diff` compares current filesystem contents directly between two workspaces using `go-diff/diffmatchpatch`.
+Shows line-by-line content differences between two workspaces. Unlike `jmp drift` (which shows file-level changes from a common ancestor), `jmp diff` compares current filesystem contents directly between two workspaces using `go-diff/diffmatchpatch`.
 
 Options:
 - No argument: diffs against the upstream workspace
@@ -111,7 +111,7 @@ Options:
 - `--context` / `-C`: context lines around changes
 - File arguments to filter specific files
 
-Implementation: `cmd/fst/commands/diff.go` (`runDiff`).
+Implementation: `cmd/jmp/commands/diff.go` (`runDiff`).
 
 ## DAG Diagrams
 
@@ -147,13 +147,13 @@ The `--dry-run` flag also shows a diagram with `merge?` as the merged snapshot p
 - The merge aborts if uncommitted local changes overlap with files the merge would touch
 - A pre-merge auto-snapshot is created when the target has dirty changes (skip with `--no-pre-snapshot`)
 - After a conflict-free merge, a post-merge snapshot is created automatically
-- Merge parents (both heads) are recorded in `.fst/merge-parents.json` for the next snapshot
+- Merge parents (both heads) are recorded in `.jmp/merge-parents.json` for the next snapshot
 - `--force` allows merge without a common base (two-way merge, treats all changes as additions)
 - `--abort` clears pending merge state
 
 ## Related Docs
 
 - [Snapshots](snapshots.md) -- merge base found via DAG traversal
-- [Drift](drift.md) -- `fst drift` uses conflict detection to report risks
+- [Drift](drift.md) -- `jmp drift` uses conflict detection to report risks
 - [Sync](sync.md) -- sync uses the same merge machinery for remote changes
 - [Workspaces](workspaces.md) -- merge operates between workspace directories

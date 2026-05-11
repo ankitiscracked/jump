@@ -3,7 +3,7 @@ package backend
 import (
 	"errors"
 
-	"github.com/ankitiscracked/jump/internal/config"
+	"github.com/ankitiscracked/jmp/internal/config"
 )
 
 // ErrNoRemote is returned when a backend has no remote to sync with.

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 // setupMergeTest creates a workspace with divergent snapshots for merge testing.
@@ -88,7 +88,7 @@ func seedSourceSnapshot(t *testing.T, s *store.Store, parentIDs []string, files 
 	manifestHash := sha256Hex(manifestJSON)
 
 	// Write manifest
-	manifestDir := filepath.Join(s.Root(), ".fst", "manifests")
+	manifestDir := filepath.Join(s.Root(), ".jmp", "manifests")
 	os.MkdirAll(manifestDir, 0755)
 	os.WriteFile(filepath.Join(manifestDir, manifestHash+".json"), manifestJSON, 0644)
 
@@ -115,8 +115,8 @@ func sha256Hex(data []byte) string {
 func TestApplyMerge_Apply(t *testing.T) {
 	ws, sourceID := setupMergeTest(t,
 		map[string]string{"base.txt": "base"},       // base
-		map[string]string{},                          // current: no changes
-		map[string]string{"new.txt": "from-source"},  // source: adds file
+		map[string]string{},                         // current: no changes
+		map[string]string{"new.txt": "from-source"}, // source: adds file
 	)
 
 	plan, err := ws.store.PlanMerge(ws.CurrentSnapshotID(), sourceID, false)

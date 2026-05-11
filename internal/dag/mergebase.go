@@ -1,7 +1,7 @@
 package dag
 
 import (
-	"github.com/ankitiscracked/jump/internal/store"
+	"github.com/ankitiscracked/jmp/internal/store"
 )
 
 // GetMergeBase finds the most recent common ancestor between two snapshot heads.

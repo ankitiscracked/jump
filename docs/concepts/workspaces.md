@@ -1,10 +1,10 @@
 # Workspaces
 
-A workspace is the fundamental unit of work in Fastest. Each workspace is a directory containing project files and a `.fst/` metadata directory that tracks snapshots, manifests, and configuration.
+A workspace is the fundamental unit of work in jmp. Each workspace is a directory containing project files and a `.jmp/` metadata directory that tracks snapshots, manifests, and configuration.
 
 ## Local Configuration
 
-Each workspace stores its config at `.fst/config.json` as a `ProjectConfig`:
+Each workspace stores its config at `.jmp/config.json` as a `ProjectConfig`:
 
 | Field               | Description                                      |
 |---------------------|--------------------------------------------------|
@@ -16,7 +16,7 @@ Each workspace stores its config at `.fst/config.json` as a `ProjectConfig`:
 | `mode`              | Workspace mode string, usually empty or `local`  |
 | `api_url`           | Legacy API URL field                             |
 
-The `.fst/` directory also contains:
+The `.jmp/` directory also contains:
 - `snapshots/` -- snapshot `.meta.json` files
 - `manifests/` -- manifest JSON files (keyed by content hash)
 - `.gitignore` -- ignores snapshots/manifests from git
@@ -25,7 +25,7 @@ Implementation: `internal/config/config.go` (`ProjectConfig`, `Load`, `Save`, `I
 
 ## Workspace Registry
 
-All workspaces within a project are tracked in a project-level registry at `.fst/workspaces/<workspace-id>.json` (stored in the project root's `.fst/` directory). Each file contains a single workspace's metadata:
+All workspaces within a project are tracked in a project-level registry at `.jmp/workspaces/<workspace-id>.json` (stored in the project root's `.jmp/` directory). Each file contains a single workspace's metadata:
 
 ```json
 {
@@ -38,53 +38,53 @@ All workspaces within a project are tracked in a project-level registry at `.fst
 }
 ```
 
-The registry enables cross-workspace commands like `fst drift` and `fst merge` to locate other workspaces by name. Per-workspace files avoid concurrent write conflicts when multiple workspaces operate in parallel.
+The registry enables cross-workspace commands like `jmp drift` and `jmp merge` to locate other workspaces by name. Per-workspace files avoid concurrent write conflicts when multiple workspaces operate in parallel.
 
 Implementation: `internal/store/` (`Store`, `WorkspaceInfo`, `RegisterWorkspace`, `FindWorkspaceByName`).
 
 ## Lifecycle
 
-### Init (`fst workspace init`)
+### Init (`jmp workspace init`)
 
 Creates a new workspace in the current directory:
-1. Creates `.fst/` with `config.json`, `snapshots/`, `manifests/`
-2. Creates `.fstignore` with default patterns if missing
+1. Creates `.jmp/` with `config.json`, `snapshots/`, `manifests/`
+2. Creates `.jmpignore` with default patterns if missing
 3. Optionally creates an initial snapshot (`--no-snapshot` to skip)
 4. Registers the workspace in the project-level workspace registry
 
-Implementation: `cmd/fst/commands/workspace.go` (`runInit`), `internal/config/config.go` (`InitAt`).
+Implementation: `cmd/jmp/commands/workspace.go` (`runInit`), `internal/config/config.go` (`InitAt`).
 
-### Create (`fst workspace create`)
+### Create (`jmp workspace create`)
 
 Creates a new workspace directory under the current project folder. Forks from the source workspace's latest snapshot with all files copied. The new workspace is linked to the project's ID and placed as a subdirectory.
 
-Implementation: `cmd/fst/commands/workspace.go` (`newWorkspaceCreateCmd`).
+Implementation: `cmd/jmp/commands/workspace.go` (`newWorkspaceCreateCmd`).
 
 ## Main Workspace
 
 Each project can designate one workspace as the "main" workspace. This is
 stored in the project config as `main_workspace_id`. The main workspace serves
-as the default comparison target for `fst drift` when no workspace argument is
+as the default comparison target for `jmp drift` when no workspace argument is
 given.
 
-Set via: `fst workspace set-main [workspace-name]`
+Set via: `jmp workspace set-main [workspace-name]`
 
-Implementation: `cmd/fst/commands/workspace.go` (`runSetMain`).
+Implementation: `cmd/jmp/commands/workspace.go` (`runSetMain`).
 
 ## Workspace Status
 
-`fst status` displays current workspace info including name, ID, path, mode, snapshots, upstream, and change summary.
+`jmp status` displays current workspace info including name, ID, path, mode, snapshots, upstream, and change summary.
 
-`fst info workspaces` lists all workspaces for the current project from the local registry, showing name, path, role (main), and drift summary.
+`jmp info workspaces` lists all workspaces for the current project from the local registry, showing name, path, role (main), and drift summary.
 
-`fst info workspace [name|id]` shows details for a specific workspace including snapshots, upstream, and project info.
+`jmp info workspace [name|id]` shows details for a specific workspace including snapshots, upstream, and project info.
 
-Implementation: `cmd/fst/commands/status.go` (`runStatus`), `cmd/fst/commands/info.go` (`runInfoWorkspaces`, `runInfoWorkspace`).
+Implementation: `cmd/jmp/commands/status.go` (`runStatus`), `cmd/jmp/commands/info.go` (`runInfoWorkspaces`, `runInfoWorkspace`).
 
 ## Storage
 
-- Blobs: `.fst/blobs/` (project-scoped, shared across workspaces under the same project)
-- Global config: `~/.config/fst/` (respects `XDG_CONFIG_HOME`) — agent preferences and author identity
+- Blobs: `.jmp/blobs/` (project-scoped, shared across workspaces under the same project)
+- Global config: `~/.config/jmp/` (respects `XDG_CONFIG_HOME`) — agent preferences and author identity
 
 Implementation: `internal/config/config.go` (`GetBlobsDir`, `GetBlobsDirAt`, `GetGlobalConfigDir`).
 

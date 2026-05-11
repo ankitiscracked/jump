@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ankitiscracked/jump/internal/config"
-	"github.com/ankitiscracked/jump/internal/conflicts"
-	"github.com/ankitiscracked/jump/internal/drift"
-	"github.com/ankitiscracked/jump/internal/manifest"
+	"github.com/ankitiscracked/jmp/internal/config"
+	"github.com/ankitiscracked/jmp/internal/conflicts"
+	"github.com/ankitiscracked/jmp/internal/drift"
+	"github.com/ankitiscracked/jmp/internal/manifest"
 )
 
 // DriftOpts configures a drift comparison.
@@ -39,7 +39,7 @@ func (ws *Workspace) Drift(opts DriftOpts) (*DriftResult, error) {
 	}
 
 	// Verify target workspace still exists on disk
-	if _, err := os.Stat(filepath.Join(otherRoot, ".fst")); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(otherRoot, ".jmp")); os.IsNotExist(err) {
 		return nil, fmt.Errorf("workspace no longer exists at: %s", otherRoot)
 	}
 
@@ -120,7 +120,7 @@ func (ws *Workspace) resolveTargetWorkspace(target string) (root, name string, e
 	if target != "" {
 		wsInfo, err := ws.store.FindWorkspaceByName(target)
 		if err != nil {
-			return "", "", fmt.Errorf("workspace '%s' not found in project\nRun 'fst info workspaces' to see available workspaces.", target)
+			return "", "", fmt.Errorf("workspace '%s' not found in project\nRun 'jmp info workspaces' to see available workspaces.", target)
 		}
 		return wsInfo.Path, wsInfo.WorkspaceName, nil
 	}
@@ -144,7 +144,7 @@ func (ws *Workspace) resolveTargetWorkspace(target string) (root, name string, e
 		}
 	}
 
-	return "", "", fmt.Errorf("no main workspace found in project\nSpecify a workspace: fst drift <workspace-name>")
+	return "", "", fmt.Errorf("no main workspace found in project\nSpecify a workspace: jmp drift <workspace-name>")
 }
 
 func loadManifestForDrift(root, snapshotID string, includeDirty bool) (*manifest.Manifest, error) {

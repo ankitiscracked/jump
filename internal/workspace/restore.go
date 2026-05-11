@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ankitiscracked/jump/internal/manifest"
+	"github.com/ankitiscracked/jmp/internal/manifest"
 )
 
 // RestoreOpts configures a restore operation.
@@ -227,7 +227,7 @@ func (ws *Workspace) resolveRestoreTarget(opts RestoreOpts) (string, error) {
 	// Default: current workspace head
 	current := ws.cfg.CurrentSnapshotID
 	if current == "" {
-		return "", fmt.Errorf("no snapshots found - create one with 'fst snapshot'")
+		return "", fmt.Errorf("no snapshots found - create one with 'jmp snapshot'")
 	}
 	return current, nil
 }
