@@ -1,0 +1,466 @@
+package commands
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/spf13/cobra"
+
+	"github.com/ankitiscracked/jump/internal/config"
+	"github.com/ankitiscracked/jump/internal/dag"
+	"github.com/ankitiscracked/jump/internal/ui"
+)
+
+func init() {
+	register(func(root *cobra.Command) { root.AddCommand(newLogCmd()) })
+}
+
+func newLogCmd() *cobra.Command {
+	var limit int
+	var showAll bool
+	var showGraph bool
+
+	cmd := &cobra.Command{
+		Use:   "log",
+		Short: "Show snapshot history",
+		Long: `Display the history of snapshots for the current workspace.
+
+Shows snapshots in reverse chronological order, starting from the current base.
+Each entry shows the snapshot ID, timestamp, file count, and description.
+
+Use --graph to see the DAG structure with merge and fork lines.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runLog(limit, showAll, showGraph)
+		},
+	}
+
+	cmd.Flags().IntVarP(&limit, "limit", "n", 10, "Maximum number of snapshots to show")
+	cmd.Flags().BoolVarP(&showAll, "all", "a", false, "Show all snapshots, not just the current chain")
+	cmd.Flags().BoolVarP(&showGraph, "graph", "g", false, "Show DAG graph alongside history")
+
+	return cmd
+}
+
+// logSnapshotMeta represents snapshot metadata for the log command
+type logSnapshotMeta struct {
+	ID                string   `json:"id"`
+	WorkspaceID       string   `json:"workspace_id"`
+	WorkspaceName     string   `json:"workspace_name"`
+	ManifestHash      string   `json:"manifest_hash"`
+	ParentSnapshotIDs []string `json:"parent_snapshot_ids"`
+	AuthorName        string   `json:"author_name"`
+	AuthorEmail       string   `json:"author_email"`
+	Message           string   `json:"message"`
+	Agent             string   `json:"agent"`
+	CreatedAt         string   `json:"created_at"`
+	Files             int      `json:"files"`
+	Size              int64    `json:"size"`
+}
+
+func runLog(limit int, showAll bool, showGraph bool) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("not in a workspace directory - run 'fst workspace init' first")
+	}
+
+	snapshotsDir, err := config.GetSnapshotsDir()
+	if err != nil {
+		return fmt.Errorf("failed to get snapshots directory: %w", err)
+	}
+
+	// Load all snapshot metadata
+	snapshots, err := loadAllSnapshots(snapshotsDir)
+	if err != nil {
+		return fmt.Errorf("failed to load snapshots: %w", err)
+	}
+
+	if len(snapshots) == 0 {
+		fmt.Println("No snapshots found.")
+		fmt.Println()
+		fmt.Println("Create one with: fst snapshot --set-base")
+		return nil
+	}
+
+	if showGraph {
+		return runLogGraph(snapshots, cfg, limit, showAll)
+	}
+
+	var toShow []*logSnapshotMeta
+
+	if showAll {
+		// Show all snapshots sorted by time
+		toShow = snapshots
+		sort.Slice(toShow, func(i, j int) bool {
+			return toShow[i].CreatedAt > toShow[j].CreatedAt
+		})
+	} else {
+		// Walk the chain from current base
+		toShow = walkSnapshotChain(snapshots, cfg.CurrentSnapshotID)
+	}
+
+	if len(toShow) == 0 {
+		fmt.Println("No snapshots in current chain.")
+		fmt.Println()
+		fmt.Printf("Current snapshot: %s\n", cfg.CurrentSnapshotID)
+		fmt.Println("Use --all to see all snapshots.")
+		return nil
+	}
+
+	// Apply limit
+	if limit > 0 && len(toShow) > limit {
+		toShow = toShow[:limit]
+	}
+
+	// Display header
+	if showAll {
+		fmt.Printf("All snapshots (%d):\n", len(snapshots))
+	} else {
+		fmt.Printf("Snapshot history (from %s):\n", cfg.WorkspaceName)
+	}
+	fmt.Println()
+
+	ids := make([]string, 0, len(toShow))
+	for _, snap := range toShow {
+		ids = append(ids, snap.ID)
+	}
+	shortIDs := shortenIDs(ids, 12)
+
+	// Display snapshots
+	for i, snap := range toShow {
+		displaySnapshot(snap, i == 0 && snap.ID == cfg.CurrentSnapshotID, shortIDs)
+	}
+
+	// Show if there are more
+	if limit > 0 && len(toShow) == limit {
+		fmt.Printf("  ... use -n to show more\n")
+	}
+
+	return nil
+}
+
+func runLogGraph(snapshots []*logSnapshotMeta, cfg *config.WorkspaceConfig, limit int, showAll bool) error {
+	// Build snapshot map for DAG operations
+	byID := make(map[string]*logSnapshotMeta, len(snapshots))
+	snapInfos := make(map[string]*dag.SnapshotInfo, len(snapshots))
+	for _, s := range snapshots {
+		byID[s.ID] = s
+		snapInfos[s.ID] = &dag.SnapshotInfo{
+			ID:        s.ID,
+			ParentIDs: s.ParentSnapshotIDs,
+			CreatedAt: s.CreatedAt,
+		}
+	}
+
+	// Determine heads
+	var heads []string
+	if showAll {
+		// Find all tips (snapshots not referenced as parent by anyone)
+		isParent := make(map[string]bool)
+		for _, s := range snapshots {
+			for _, pid := range s.ParentSnapshotIDs {
+				isParent[pid] = true
+			}
+		}
+		for _, s := range snapshots {
+			if !isParent[s.ID] {
+				heads = append(heads, s.ID)
+			}
+		}
+		if len(heads) == 0 {
+			heads = append(heads, cfg.CurrentSnapshotID)
+		}
+	} else {
+		heads = []string{cfg.CurrentSnapshotID}
+	}
+
+	// Collect reachable snapshots and topo sort
+	reachable := dag.CollectReachable(heads, snapInfos)
+	sorted := dag.TopoSort(heads, reachable)
+
+	if len(sorted) == 0 {
+		fmt.Println("No snapshots in graph.")
+		return nil
+	}
+
+	// Apply limit
+	if limit > 0 && len(sorted) > limit {
+		sorted = sorted[:limit]
+	}
+
+	// Build short IDs
+	ids := make([]string, 0, len(sorted))
+	for _, s := range sorted {
+		ids = append(ids, s.ID)
+	}
+	shortIDs := shortenIDs(ids, 12)
+
+	// Display header
+	if showAll {
+		fmt.Printf("Snapshot DAG (all workspaces):\n")
+	} else {
+		fmt.Printf("Snapshot DAG (from %s):\n", cfg.WorkspaceName)
+	}
+	fmt.Println()
+
+	// Render graph
+	renderer := dag.NewGraphRenderer()
+	renderer.Colorize = true
+
+	for _, snapInfo := range sorted {
+		snap := byID[snapInfo.ID]
+		if snap == nil {
+			continue
+		}
+
+		row := renderer.NextRow(snapInfo.ID, snapInfo.ParentIDs)
+
+		// Print pre-lines (merge-in)
+		for _, line := range row.PreLines {
+			fmt.Println(line)
+		}
+
+		// Print node line with snapshot info
+		isCurrent := snap.ID == cfg.CurrentSnapshotID
+		displayGraphSnapshot(row.NodeLine, snap, isCurrent, shortIDs)
+
+		// Print post-lines (fork-out)
+		for _, line := range row.PostLines {
+			fmt.Println(line)
+		}
+	}
+
+	if limit > 0 && len(sorted) == limit {
+		fmt.Printf("  ... use -n to show more\n")
+	}
+
+	return nil
+}
+
+func displayGraphSnapshot(graphPrefix string, snap *logSnapshotMeta, isCurrent bool, shortIDs map[string]string) {
+	timeStr := formatSnapshotTime(snap.CreatedAt)
+	shortID := shortIDs[snap.ID]
+
+	agentTag := ""
+	if snap.Agent != "" {
+		agentTag = " " + ui.Cyan("["+snap.Agent+"]")
+	}
+
+	// Determine graph indent for continuation lines
+	graphIndent := strings.Repeat(" ", len([]rune(graphPrefix)))
+
+	// First line: graph prefix + snapshot info
+	fmt.Printf("%s  %s  %s  (%d files, %s)%s\n",
+		graphPrefix,
+		ui.Yellow(shortID),
+		ui.Dim(timeStr),
+		snap.Files,
+		formatBytes(snap.Size),
+		agentTag,
+	)
+
+	// Author (indented with graph continuation)
+	if snap.AuthorName != "" || snap.AuthorEmail != "" {
+		authorStr := snap.AuthorName
+		if snap.AuthorEmail != "" {
+			if authorStr != "" {
+				authorStr += " <" + snap.AuthorEmail + ">"
+			} else {
+				authorStr = snap.AuthorEmail
+			}
+		}
+		fmt.Printf("%s  %s\n", graphIndent, ui.Dim("Author: "+authorStr))
+	}
+
+	// Message (indented with graph continuation)
+	if snap.Message != "" {
+		msg := snap.Message
+		if len(msg) > 70 {
+			msg = msg[:67] + "..."
+		}
+		fmt.Printf("%s  %s\n", graphIndent, msg)
+	}
+
+	if isCurrent {
+		fmt.Printf("%s  %s\n", graphIndent, ui.Dim("(current)"))
+	}
+
+	fmt.Println()
+}
+
+func loadAllSnapshots(manifestDir string) ([]*logSnapshotMeta, error) {
+	var snapshots []*logSnapshotMeta
+
+	entries, err := os.ReadDir(manifestDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return snapshots, nil
+		}
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".meta.json") {
+			continue
+		}
+
+		path := filepath.Join(manifestDir, name)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+
+		var meta logSnapshotMeta
+		if err := json.Unmarshal(data, &meta); err != nil {
+			continue
+		}
+
+		snapshots = append(snapshots, &meta)
+	}
+
+	return snapshots, nil
+}
+
+func walkSnapshotChain(snapshots []*logSnapshotMeta, startID string) []*logSnapshotMeta {
+	// Build lookup map
+	byID := make(map[string]*logSnapshotMeta)
+	for _, s := range snapshots {
+		byID[s.ID] = s
+	}
+
+	var chain []*logSnapshotMeta
+	currentID := startID
+
+	// Walk backwards through parents
+	for currentID != "" {
+		snap, exists := byID[currentID]
+		if !exists {
+			break
+		}
+		chain = append(chain, snap)
+		if len(snap.ParentSnapshotIDs) > 0 {
+			currentID = snap.ParentSnapshotIDs[0]
+		} else {
+			currentID = ""
+		}
+	}
+
+	return chain
+}
+
+func displaySnapshot(snap *logSnapshotMeta, isCurrent bool, shortIDs map[string]string) {
+	// Parse and format time
+	timeStr := formatSnapshotTime(snap.CreatedAt)
+
+	// Current indicator
+	indicator := " "
+	if isCurrent {
+		indicator = "*"
+	}
+
+	// Snapshot ID (shortened)
+	shortID := shortIDs[snap.ID]
+
+	// Agent tag (if present)
+	agentTag := ""
+	if snap.Agent != "" {
+		agentTag = " " + ui.Cyan("["+snap.Agent+"]")
+	}
+
+	// Format: * snap-abc123  2 hours ago  (5 files, 1.2 KB) [claude]
+	fmt.Printf("%s %s  %s  (%d files, %s)%s\n",
+		indicator,
+		ui.Yellow(shortID),
+		ui.Dim(timeStr),
+		snap.Files,
+		formatBytes(snap.Size),
+		agentTag,
+	)
+
+	// Author (indented)
+	if snap.AuthorName != "" || snap.AuthorEmail != "" {
+		authorStr := snap.AuthorName
+		if snap.AuthorEmail != "" {
+			if authorStr != "" {
+				authorStr += " <" + snap.AuthorEmail + ">"
+			} else {
+				authorStr = snap.AuthorEmail
+			}
+		}
+		fmt.Printf("    %s\n", ui.Dim("Author: "+authorStr))
+	}
+
+	// Message (indented)
+	if snap.Message != "" {
+		// Wrap long messages
+		msg := snap.Message
+		if len(msg) > 70 {
+			msg = msg[:67] + "..."
+		}
+		fmt.Printf("    %s\n", msg)
+	}
+
+	fmt.Println()
+}
+
+func formatSnapshotTime(timeStr string) string {
+	t, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return timeStr
+	}
+
+	now := time.Now()
+	diff := now.Sub(t)
+
+	switch {
+	case diff < time.Minute:
+		return "just now"
+	case diff < time.Hour:
+		mins := int(diff.Minutes())
+		if mins == 1 {
+			return "1 minute ago"
+		}
+		return fmt.Sprintf("%d minutes ago", mins)
+	case diff < 24*time.Hour:
+		hours := int(diff.Hours())
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	case diff < 7*24*time.Hour:
+		days := int(diff.Hours() / 24)
+		if days == 1 {
+			return "yesterday"
+		}
+		return fmt.Sprintf("%d days ago", days)
+	default:
+		return t.Format("Jan 2, 2006")
+	}
+}
+
+func formatBytes(bytes int64) string {
+	if bytes == 0 {
+		return "0 B"
+	}
+	const k = 1024
+	sizes := []string{"B", "KB", "MB", "GB"}
+	i := 0
+	fb := float64(bytes)
+	for fb >= k && i < len(sizes)-1 {
+		fb /= k
+		i++
+	}
+	if i == 0 {
+		return fmt.Sprintf("%d %s", bytes, sizes[i])
+	}
+	return fmt.Sprintf("%.1f %s", fb, sizes[i])
+}
