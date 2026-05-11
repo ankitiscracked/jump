@@ -80,3 +80,10 @@ fst agents set-preferred claude # Set preferred agent
 | `fst sync` | `--agent-summary` | Summarize sync results |
 
 The default merge conflict mode is **Agent** -- `fst merge` first auto-merges files with non-overlapping line changes via diff3, then invokes the preferred agent to resolve any remaining true conflicts. Use `--manual`, `--theirs`, or `--ours` to override the conflict resolution strategy (auto-merge still applies in all modes).
+
+## Packaged workflow skill
+
+This repository ships a small agent workflow skill at
+`.agents/skills/fst-agent-workflow/SKILL.md`. It teaches an agent to call
+`fst` directly for task start/status/finish, snapshots, drift checks, events,
+and Git export while leaving code search, edits, and tests to the agent.

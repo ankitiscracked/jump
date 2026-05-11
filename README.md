@@ -73,6 +73,7 @@ fst git export
 - [Local state](docs/cli/local-state.md)
 - [Ignore patterns](docs/cli/ignore.md)
 - [Agents](docs/cli/agents.md)
+- [Packaged agent skill](.agents/skills/fst-agent-workflow/SKILL.md)
 - [Snapshots](docs/concepts/snapshots.md)
 - [Workspaces](docs/concepts/workspaces.md)
 - [Drift](docs/concepts/drift.md)
