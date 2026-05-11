@@ -212,6 +212,25 @@ func TestTaskLifecycleRecordsSnapshots(t *testing.T) {
 	if len(tasks) != 1 || tasks[0].ID != task.ID || tasks[0].Status != "finished" || tasks[0].Summary != "done" {
 		t.Fatalf("unexpected tasks: %+v", tasks)
 	}
+
+	err = captureStdout(func() error {
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"task", "status", task.ID, "--json"})
+		return cmd.Execute()
+	}, &output)
+	if err != nil {
+		t.Fatalf("task status by id failed: %v", err)
+	}
+	var namedTask struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &namedTask); err != nil {
+		t.Fatalf("failed to parse named task JSON: %v\noutput: %s", err, output)
+	}
+	if namedTask.ID != task.ID || namedTask.Status != "finished" {
+		t.Fatalf("unexpected named task: %+v", namedTask)
+	}
 }
 
 func TestWorkspaceCreateEmitsEvent(t *testing.T) {

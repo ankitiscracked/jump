@@ -132,15 +132,25 @@ func runTaskStart(name string) error {
 }
 
 func runTaskStatus(id string, jsonOutput bool) error {
+	if id != "" {
+		s, err := openEventStore()
+		if err != nil {
+			return err
+		}
+		task, err := s.LoadTask(id)
+		if err != nil {
+			return err
+		}
+		return printTask(task, jsonOutput)
+	}
+
 	ws, err := workspace.Open()
 	if err != nil {
 		return fmt.Errorf("not in a workspace directory - run 'fst workspace init' first")
 	}
 	defer ws.Close()
 
-	if id == "" {
-		id = ws.CurrentTaskID()
-	}
+	id = ws.CurrentTaskID()
 	if id == "" {
 		return fmt.Errorf("no active task")
 	}
