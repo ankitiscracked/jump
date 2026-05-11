@@ -63,6 +63,9 @@ Flags:
 - `events`: `--since`, `--json`
 - `watch`: `--since`, `--interval`
 
+Current event types: `workspace_created`, `snapshot_created`, `merge_started`,
+`merge_completed`, `restore_completed`.
+
 Merge conflict modes:
 
 - Default: use preferred coding agent if available, with manual fallback.

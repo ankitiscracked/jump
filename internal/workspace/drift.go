@@ -19,16 +19,16 @@ type DriftOpts struct {
 
 // DriftResult contains the full drift analysis between two workspaces.
 type DriftResult struct {
-	OurName          string
-	TheirName        string
-	CommonAncestorID string
-	OurHead          string
-	TheirHead        string
-	OurChanges       *drift.Report
-	TheirChanges     *drift.Report
+	OurName           string
+	TheirName         string
+	CommonAncestorID  string
+	OurHead           string
+	TheirHead         string
+	OurChanges        *drift.Report
+	TheirChanges      *drift.Report
 	SnapshotConflicts *conflicts.Report
 	DirtyConflicts    *conflicts.Report // nil if NoDirty
-	OverlappingPaths []string
+	OverlappingPaths  []string
 }
 
 // Drift computes drift between this workspace and a target workspace.
@@ -120,12 +120,19 @@ func (ws *Workspace) resolveTargetWorkspace(target string) (root, name string, e
 	if target != "" {
 		wsInfo, err := ws.store.FindWorkspaceByName(target)
 		if err != nil {
-			return "", "", fmt.Errorf("workspace '%s' not found in project\nRun 'fst workspaces' to see available workspaces.", target)
+			return "", "", fmt.Errorf("workspace '%s' not found in project\nRun 'fst info workspaces' to see available workspaces.", target)
 		}
 		return wsInfo.Path, wsInfo.WorkspaceName, nil
 	}
 
-	// Find main workspace from store registry
+	if _, parentCfg, err := config.FindProjectRootFrom(ws.root); err == nil && parentCfg.MainWorkspaceID != "" {
+		wsInfo, err := ws.store.FindWorkspaceByID(parentCfg.MainWorkspaceID)
+		if err == nil && wsInfo.WorkspaceID != ws.cfg.WorkspaceID {
+			return wsInfo.Path, wsInfo.WorkspaceName, nil
+		}
+	}
+
+	// Fall back to a workspace named "main" for older projects.
 	workspaces, err := ws.store.ListWorkspaces()
 	if err != nil {
 		return "", "", fmt.Errorf("failed to list workspaces: %w", err)

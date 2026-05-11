@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/ankitiscracked/jump/internal/store"
 	"github.com/ankitiscracked/jump/internal/ui"
 	"github.com/ankitiscracked/jump/internal/workspace"
 )
@@ -99,8 +100,29 @@ func runRestore(files []string, toSnapshot string, toBase bool, dryRun bool) err
 		fmt.Printf(", deleted %d files", result.Deleted)
 	}
 	fmt.Println()
+	_ = ws.Store().WriteEvent(store.Event{
+		Type:          "restore_completed",
+		WorkspaceID:   ws.WorkspaceID(),
+		WorkspaceName: ws.WorkspaceName(),
+		SnapshotID:    result.TargetSnapshotID,
+		FilesChanged:  restoreResultFiles(result),
+		Message:       fmt.Sprintf("Restored %d files", result.Restored+result.Deleted),
+	})
 
 	return nil
+}
+
+func restoreResultFiles(result *workspace.RestoreResult) []string {
+	if result == nil {
+		return nil
+	}
+	out := make([]string, 0, len(result.Actions))
+	for _, action := range result.Actions {
+		if action.Action == "restore" || action.Action == "delete" {
+			out = append(out, action.Path)
+		}
+	}
+	return out
 }
 
 func printRestoreActions(result *workspace.RestoreResult) {

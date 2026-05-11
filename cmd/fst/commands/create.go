@@ -256,6 +256,15 @@ func runCreate(args []string, fromWorkspace, backendArg string) error {
 	}); err != nil {
 		fmt.Printf("Warning: Could not register workspace in project: %v\n", err)
 	}
+	_ = projectStore.WriteEvent(store.Event{
+		Type:                "workspace_created",
+		WorkspaceID:         workspaceID,
+		WorkspaceName:       workspaceName,
+		SourceWorkspaceID:   sourceWorkspaceCfg.WorkspaceID,
+		SourceWorkspaceName: sourceWorkspaceCfg.WorkspaceName,
+		SnapshotID:          forkSnapshotID,
+		Message:             fmt.Sprintf("Created workspace %s from %s", workspaceName, sourceWorkspaceCfg.WorkspaceName),
+	})
 
 	fmt.Println()
 	fmt.Println("✓ Workspace created!")
@@ -282,6 +291,13 @@ func resolveMainWorkspaceName(parentRoot string, parentCfg *config.ProjectConfig
 	}
 
 	// Check if a main workspace is defined
+	if parentCfg.MainWorkspaceID != "" {
+		for _, ws := range workspaces {
+			if ws.WorkspaceID == parentCfg.MainWorkspaceID {
+				return ws.WorkspaceName
+			}
+		}
+	}
 	if parentCfg.BaseWorkspaceID != "" {
 		for _, ws := range workspaces {
 			if ws.WorkspaceID == parentCfg.BaseWorkspaceID {
@@ -317,7 +333,7 @@ func findSourceWorkspace(name, projectID, parentRoot string) (string, *config.Wo
 		}
 	}
 
-	return "", nil, fmt.Errorf("workspace '%s' not found - run 'fst workspaces' to see available workspaces", name)
+	return "", nil, fmt.Errorf("workspace '%s' not found - run 'fst info workspaces' to see available workspaces", name)
 }
 
 func defaultWorkspaceName(projectName string) string {

@@ -111,6 +111,89 @@ func TestSnapshotEmitsEvent(t *testing.T) {
 	}
 }
 
+func TestWorkspaceCreateEmitsEvent(t *testing.T) {
+	projectRoot, mainRoot := setupProjectWithMain(t, map[string]string{
+		"base.txt": "base",
+	})
+
+	restoreCwd := chdir(t, projectRoot)
+	defer restoreCwd()
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"workspace", "create", "agent-one"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("workspace create failed: %v", err)
+	}
+	_ = mainRoot
+
+	var output string
+	err := captureStdout(func() error {
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"events", "--json"})
+		return cmd.Execute()
+	}, &output)
+	if err != nil {
+		t.Fatalf("events failed: %v", err)
+	}
+
+	var events []eventRecord
+	if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &events); err != nil {
+		t.Fatalf("failed to parse events JSON: %v\noutput: %s", err, output)
+	}
+	if !hasEvent(events, "workspace_created", "agent-one") {
+		t.Fatalf("expected workspace_created event, got %+v", events)
+	}
+}
+
+func TestMergeAndRestoreEmitEvents(t *testing.T) {
+	_, targetRoot, _ := setupProjectWithWorkspaces(t,
+		map[string]string{"a.txt": "one"},
+		map[string]string{"b.txt": "two"},
+	)
+
+	restoreCwd := chdir(t, targetRoot)
+	defer restoreCwd()
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"merge", "ws-source", "--theirs"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("merge failed: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(targetRoot, "scratch.txt"), []byte("temp"), 0644); err != nil {
+		t.Fatalf("write scratch: %v", err)
+	}
+	cmd = NewRootCmd()
+	cmd.SetArgs([]string{"restore"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("restore failed: %v", err)
+	}
+
+	var output string
+	err := captureStdout(func() error {
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"events", "--json"})
+		return cmd.Execute()
+	}, &output)
+	if err != nil {
+		t.Fatalf("events failed: %v", err)
+	}
+
+	var events []eventRecord
+	if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &events); err != nil {
+		t.Fatalf("failed to parse events JSON: %v\noutput: %s", err, output)
+	}
+	if !hasEvent(events, "merge_started", "ws-target") {
+		t.Fatalf("expected merge_started event, got %+v", events)
+	}
+	if !hasEvent(events, "merge_completed", "ws-target") {
+		t.Fatalf("expected merge_completed event, got %+v", events)
+	}
+	if !hasEvent(events, "restore_completed", "ws-target") {
+		t.Fatalf("expected restore_completed event, got %+v", events)
+	}
+}
+
 func TestDriftBetweenWorkspacesIncludeDirtyJSON(t *testing.T) {
 	// setupProjectWithWorkspaces creates base.txt in both workspaces at base.
 	// Target adds a.txt, Source adds a.txt (different content) + b.txt.
@@ -594,6 +677,23 @@ func snapshotMetaPath(root, snapshotID string) string {
 func contains(list []string, item string) bool {
 	for _, v := range list {
 		if v == item {
+			return true
+		}
+	}
+	return false
+}
+
+type eventRecord struct {
+	Type                string   `json:"type"`
+	Workspace           string   `json:"workspace_name"`
+	SourceWorkspaceName string   `json:"source_workspace_name"`
+	FilesChanged        []string `json:"files_changed"`
+	Message             string   `json:"message"`
+}
+
+func hasEvent(events []eventRecord, eventType, workspace string) bool {
+	for _, e := range events {
+		if e.Type == eventType && e.Workspace == workspace {
 			return true
 		}
 	}

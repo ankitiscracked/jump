@@ -15,16 +15,18 @@ const eventsDirName = "events"
 
 // Event is an append-only project-local coordination record.
 type Event struct {
-	ID                int64    `json:"id"`
-	Type              string   `json:"type"`
-	Time              string   `json:"time"`
-	WorkspaceID       string   `json:"workspace_id,omitempty"`
-	WorkspaceName     string   `json:"workspace_name,omitempty"`
-	SnapshotID        string   `json:"snapshot_id,omitempty"`
-	ParentSnapshotIDs []string `json:"parent_snapshot_ids,omitempty"`
-	FilesChanged      []string `json:"files_changed,omitempty"`
-	Message           string   `json:"message,omitempty"`
-	Agent             string   `json:"agent,omitempty"`
+	ID                  int64    `json:"id"`
+	Type                string   `json:"type"`
+	Time                string   `json:"time"`
+	WorkspaceID         string   `json:"workspace_id,omitempty"`
+	WorkspaceName       string   `json:"workspace_name,omitempty"`
+	SourceWorkspaceID   string   `json:"source_workspace_id,omitempty"`
+	SourceWorkspaceName string   `json:"source_workspace_name,omitempty"`
+	SnapshotID          string   `json:"snapshot_id,omitempty"`
+	ParentSnapshotIDs   []string `json:"parent_snapshot_ids,omitempty"`
+	FilesChanged        []string `json:"files_changed,omitempty"`
+	Message             string   `json:"message,omitempty"`
+	Agent               string   `json:"agent,omitempty"`
 }
 
 func (s *Store) eventsDir() string {

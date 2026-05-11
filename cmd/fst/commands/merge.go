@@ -137,7 +137,7 @@ func runMerge(cmd *cobra.Command, sourceName string, mode ConflictMode, dryRun b
 	// Resolve source workspace via project registry
 	sourceInfo, err := ws.Store().FindWorkspaceByName(sourceName)
 	if err != nil {
-		return fmt.Errorf("workspace '%s' not found in project registry\nRun 'fst workspaces' to see available workspaces", sourceName)
+		return fmt.Errorf("workspace '%s' not found in project registry\nRun 'fst info workspaces' to see available workspaces", sourceName)
 	}
 
 	sourceSnapshotID := sourceInfo.CurrentSnapshotID
@@ -266,6 +266,15 @@ func runMerge(cmd *cobra.Command, sourceName string, mode ConflictMode, dryRun b
 
 	// Apply merge
 	fmt.Println("Applying merge...")
+	_ = ws.Store().WriteEvent(store.Event{
+		Type:                "merge_started",
+		WorkspaceID:         ws.WorkspaceID(),
+		WorkspaceName:       ws.WorkspaceName(),
+		SourceWorkspaceID:   sourceInfo.WorkspaceID,
+		SourceWorkspaceName: sourceInfo.WorkspaceName,
+		SnapshotID:          currentSnapshotID,
+		Message:             fmt.Sprintf("Merging %s into %s", sourceInfo.WorkspaceName, ws.WorkspaceName()),
+	})
 	result, err := ws.ApplyMerge(applyOpts)
 	if err != nil {
 		return err
@@ -341,7 +350,36 @@ func runMerge(cmd *cobra.Command, sourceName string, mode ConflictMode, dryRun b
 		}
 	}
 
+	_ = ws.Store().WriteEvent(store.Event{
+		Type:                "merge_completed",
+		WorkspaceID:         ws.WorkspaceID(),
+		WorkspaceName:       ws.WorkspaceName(),
+		SourceWorkspaceID:   sourceInfo.WorkspaceID,
+		SourceWorkspaceName: sourceInfo.WorkspaceName,
+		SnapshotID:          mergedSnapshotID,
+		FilesChanged:        mergeResultFiles(result),
+		Message:             fmt.Sprintf("Merged %s", sourceInfo.WorkspaceName),
+	})
+
 	return nil
+}
+
+func mergeResultFiles(result *workspace.MergeResult) []string {
+	if result == nil {
+		return nil
+	}
+	seen := make(map[string]struct{})
+	out := make([]string, 0, len(result.Applied)+len(result.AutoMerged)+len(result.Conflicts)+len(result.Failed))
+	for _, group := range [][]string{result.Applied, result.AutoMerged, result.Conflicts, result.Failed} {
+		for _, path := range group {
+			if _, ok := seen[path]; ok {
+				continue
+			}
+			seen[path] = struct{}{}
+			out = append(out, path)
+		}
+	}
+	return out
 }
 
 func printMergePlan(plan *store.MergePlan) {
