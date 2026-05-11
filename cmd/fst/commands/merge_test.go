@@ -70,7 +70,9 @@ func setupProjectWithWorkspaces(t *testing.T, targetFiles, sourceFiles map[strin
 		}
 	}
 
-	// Create initial snapshots for both workspaces (they share the project store)
+	// Create one shared base snapshot, then point both workspaces at it.
+	// Snapshot IDs include CreatedAt, so independently snapshotting identical
+	// trees can still produce different IDs and no common ancestor.
 	restoreCwd := chdir(t, targetRoot)
 	cmd := NewRootCmd()
 	cmd.SetArgs([]string{"snapshot", "--message", "base snapshot"})
@@ -79,13 +81,24 @@ func setupProjectWithWorkspaces(t *testing.T, targetFiles, sourceFiles map[strin
 	}
 	restoreCwd()
 
-	restoreCwd = chdir(t, sourceRoot)
-	cmd = NewRootCmd()
-	cmd.SetArgs([]string{"snapshot", "--message", "base snapshot"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("source base snapshot failed: %v", err)
+	targetCfg, err := config.LoadAt(targetRoot)
+	if err != nil {
+		t.Fatalf("LoadAt target after base snapshot: %v", err)
 	}
-	restoreCwd()
+	baseSnapshotID := targetCfg.CurrentSnapshotID
+	if baseSnapshotID == "" {
+		t.Fatalf("expected target base snapshot ID")
+	}
+
+	sourceCfg, err := config.LoadAt(sourceRoot)
+	if err != nil {
+		t.Fatalf("LoadAt source: %v", err)
+	}
+	sourceCfg.BaseSnapshotID = baseSnapshotID
+	sourceCfg.CurrentSnapshotID = baseSnapshotID
+	if err := config.SaveAt(sourceRoot, sourceCfg); err != nil {
+		t.Fatalf("SaveAt source base: %v", err)
+	}
 
 	// Add divergent changes
 	for path, content := range targetFiles {
